@@ -25,6 +25,6 @@ Link: https://geronimo-bassi.github.io/longevix-qa-board/
 
 ## Para quien mantiene la página
 
-- Todo está en `index.html`. La API key de Trello va en `const TRELLO_KEY = "..."`. La API key es pública por diseño; el **Secret** nunca va acá.
+- Todo está en `index.html`, salvo el logo y los íconos de la pestaña, que están en `assets/`. La API key de Trello va en `const TRELLO_KEY = "..."`. La API key es pública por diseño; el **Secret** nunca va acá.
 - En la configuración de la key (trello.com/power-ups/admin), "Allowed origins" tiene que incluir `https://geronimo-bassi.github.io`.
 - Para publicar un cambio: commit y push a `main`; GitHub Pages lo actualiza en 1–2 minutos.
