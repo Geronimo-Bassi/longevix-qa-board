@@ -934,10 +934,31 @@
       im.src = url.href;
     });
   }
-  const IMG_METHODS = { api: (u) => viaFetch(apiHost(u)), web: (u) => viaFetch(u), query: viaQuery };
+  // Plain <img>: works only if the browser sends the Trello session cookie along.
+  function viaCookie(u) {
+    return new Promise((ok, ko) => { const im = new Image(); im.onload = () => ok(u); im.onerror = () => ko({ code: "img" }); im.src = u; });
+  }
+  const IMG_METHODS = { api: (u) => viaFetch(apiHost(u)), web: (u) => viaFetch(u), query: viaQuery, cookie: viaCookie };
+  let probed = false;
+  // Diagnostic only: does Trello answer with a redirect (to a file server) or directly?
+  async function probe(u) {
+    if (probed) return; probed = true;
+    try {
+      const r = await fetch(apiHost(u), { redirect: "manual", headers: { Authorization: `OAuth oauth_consumer_key="${TRELLO_KEY}", oauth_token="${token}"` } });
+      imgDiag.push(`probe: ${r.type === "opaqueredirect" ? "redirect" : r.status + " " + (r.headers.get("content-type") || "")}`);
+    } catch (e) { imgDiag.push(`probe: ${e && e.message || e}`); }
+  }
+  function showImgDiag() {
+    if (showImgDiag.done) return; showImgDiag.done = true;
+    const box = document.createElement("div");
+    box.className = "banner warn";
+    box.innerHTML = `Las fotos no se pueden mostrar en esta página todavía. Mandale esta línea a Gero: <code>${esc([...new Set(imgDiag)].join(" · ") || "sin datos")}</code>`;
+    $("banner").appendChild(box);
+  }
   function imgUrl(src) {
     if (imgCache.has(src)) return imgCache.get(src);
     const pr = (async () => {
+      await probe(src);
       let last;
       for (const m of imgMode ? [imgMode] : Object.keys(IMG_METHODS)) {
         try { const u = await IMG_METHODS[m](src); imgMode = m; return u; }
@@ -965,7 +986,7 @@
       const src = el.dataset.src; el.removeAttribute("data-src");
       if (imgBlocked) return imgFallback(el);
       try { el.src = await imgUrl(src); }
-      catch (e) { if (!imgMode) imgBlocked = true; imgFallback(el); }
+      catch (e) { if (!imgMode) { imgBlocked = true; showImgDiag(); } imgFallback(el); }
     });
   }
   function showImage(src, href) {
