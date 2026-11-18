@@ -18,7 +18,7 @@
     --accent: #2f5bd3; --accent-btn: #2f5bd3; --chip: #efeee9; --danger: #dc2626; --warn: #b45309;
     /* type, state and priority colors: one hue each, never shared */
     --bug: #2563eb; --mejora: #0d9488; --duda: #db2777; --bloq: #ea580c; --parcial: #ca8a04; --indice: #64748b;
-    --p1: #dc2626;
+    --p1: #dc2626; --p2: #d97706; --p3: #16a34a;
     --rep: #475569; --rech: #7c3aed; --fixed: #059669;
     --tint: 13%; --ink: #000; --ink-mix: 18%;
     --shadow: 0 1px 2px rgba(0,0,0,.06), 0 1px 1px rgba(0,0,0,.04);
@@ -114,9 +114,10 @@
     background: color-mix(in srgb, var(--c) var(--tint), transparent); color: color-mix(in srgb, var(--c), var(--ink) var(--ink-mix)); }
   .t-BUG { --c: var(--bug); } .t-Mejora { --c: var(--mejora); } .t-Duda { --c: var(--duda); }
   .t-Bloqueado { --c: var(--bloq); } .t-Parcial { --c: var(--parcial); } .t-Índice, .t-Otro { --c: var(--indice); }
+  /* priorities: solid traffic-light colors, so P1 / P2 / P3 read at a glance */
   .p-P1 { background: var(--p1); color: #fff; }
-  .p-P2 { background: none; color: var(--text); box-shadow: inset 0 0 0 1px var(--muted); }
-  .p-P3 { background: none; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
+  .p-P2 { background: var(--p2); color: #fff; }
+  .p-P3 { background: var(--p3); color: #fff; }
   .tag.s::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
   .s-Reportado { --c: var(--rep); } .s-Rechequear { --c: var(--rech); } .s-FIXED { --c: var(--fixed); }
   .s-Sin { background: none; color: var(--muted); font-weight: 500; } .s-Sin::before { background: none !important; box-shadow: inset 0 0 0 1px var(--muted); }
@@ -194,6 +195,18 @@
   .arow button.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
   .arow select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); max-width: 340px; }
   .lchk { font-size: 13px; display: flex; gap: 3px; align-items: center; }
+  /* colored pickers (state, labels, type, priority): outlined when off, filled when on */
+  .lchk.chip { position: relative; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--c) 45%, var(--line)); color: color-mix(in srgb, var(--c), var(--ink) var(--ink-mix)); font-weight: 600; font-size: 12.5px; cursor: pointer; user-select: none; }
+  .lchk.chip::before, .arow button.st::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+  .lchk.chip input { position: absolute; opacity: 0; pointer-events: none; }
+  .lchk.chip:hover { background: color-mix(in srgb, var(--c) var(--tint), transparent); }
+  .lchk.chip:has(input:checked) { background: var(--c); border-color: var(--c); color: #fff; }
+  .lchk.chip:has(input:checked)::before { background: #fff; }
+  .lchk.chip:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .arow button.st { border-color: color-mix(in srgb, var(--c) 45%, var(--line)); color: color-mix(in srgb, var(--c), var(--ink) var(--ink-mix)); font-weight: 600; }
+  .arow button.st:hover { background: color-mix(in srgb, var(--c) var(--tint), transparent); }
+  .arow button.st.on { background: var(--c); border-color: var(--c); color: #fff; }
+  .arow button.st.on::before { background: #fff; }
   button.danger { color: var(--danger); border-color: var(--danger); }
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 20; }
   .modal.open { display: flex; }
@@ -600,6 +613,9 @@
   // ---------- render ----------
   function who(c) { return c.creator ? c.creator : c.tester !== "—" ? c.tester + " (est.)" : "—"; }
   const tagTipo = (c) => `<span class="tag t-${esc(c.tipo)}">${esc(c.tipo)}</span>` + c.extra.map((x) => `<span class="tag t-${esc(x)}">${esc(x)}</span>`).join("");
+  const CHIP_VAR = { BUG: "--bug", MEJORA: "--mejora", Mejora: "--mejora", DUDA: "--duda", Duda: "--duda", BLOQUEADO: "--bloq", Bloqueado: "--bloq", PARCIAL: "--parcial",
+    P1: "--p1", P2: "--p2", P3: "--p3", FIXED: "--fixed", Rechequear: "--rech", Reportado: "--rep" };
+  const chipStyle = (k) => `style="--c: var(${CHIP_VAR[k] || "--indice"})"`;
   const tagPrio = (c) => c.prio === "—" ? "" : `<span class="tag p-${c.prio}">${c.prio}</span>`;
   const tagEstado = (c) => `<span class="tag s s-${c.estado === "Sin etiqueta" ? "Sin" : c.estado}">${esc(c.estado)}</span>`;
   const fmtDate = (d) => d ? d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) : "";
@@ -760,10 +776,10 @@
       <p><a href="${esc(c.url)}" target="_blank" rel="noopener">Abrir en Trello ${ic("ext", 1)}</a></p>
       <div class="actions">
         <div class="arow"><span class="alabel">Estado</span>
-          ${STATE_LABELS.map((s) => `<button data-act="state" data-v="${s}" class="${c.estado === s ? "on" : ""}">${s}</button>`).join("")}
+          ${STATE_LABELS.map((s) => `<button data-act="state" data-v="${s}" class="st ${c.estado === s ? "on" : ""}" ${chipStyle(s)}>${s}</button>`).join("")}
           <button data-act="state" data-v="">Sin estado</button></div>
         <div class="arow"><span class="alabel">Etiquetas</span>
-          ${EDIT_LABELS.map((l) => `<label class="lchk"><input type="checkbox" data-lab="${l}" ${c.labelIds.includes(LABELS[l]) ? "checked" : ""}> ${l}</label>`).join("")}
+          ${EDIT_LABELS.map((l) => `<label class="lchk chip" ${chipStyle(l)}><input type="checkbox" data-lab="${l}" ${c.labelIds.includes(LABELS[l]) ? "checked" : ""}>${l}</label>`).join("")}
           <button data-act="labels">Aplicar etiquetas</button></div>
         <div class="arow"><span class="alabel">Mover a</span>
           <select id="moveTo">${lists.map((l) => `<option value="${esc(l.id)}" ${l.id === c.listId ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select>
@@ -1043,9 +1059,9 @@
       <h3>Nueva tarjeta</h3>
       <div class="frow"><span class="fl">Caso</span><input type="text" id="ncCase" placeholder="PAY-12" style="width:130px">
         <span class="fl" style="width:auto">Tipo</span>
-        ${["BUG", "Duda", "Mejora", "Bloqueado"].map((t, i) => `<label class="lchk"><input type="radio" name="ncTipo" value="${t}" ${i === 0 ? "checked" : ""}> ${t}</label>`).join("")}
+        ${["BUG", "Duda", "Mejora", "Bloqueado"].map((t, i) => `<label class="lchk chip" ${chipStyle(t)}><input type="radio" name="ncTipo" value="${t}" ${i === 0 ? "checked" : ""}>${t}</label>`).join("")}
         <span class="fl" style="width:auto">Prio</span>
-        ${["P1", "P2", "P3"].map((p) => `<label class="lchk"><input type="radio" name="ncPrio" value="${p}" ${p === "P2" ? "checked" : ""}> ${p}</label>`).join("")}</div>
+        ${["P1", "P2", "P3"].map((p) => `<label class="lchk chip" ${chipStyle(p)}><input type="radio" name="ncPrio" value="${p}" ${p === "P2" ? "checked" : ""}>${p}</label>`).join("")}</div>
       <div class="frow"><span class="fl">Lista</span><select id="ncList" class="full"><option value="">— elegí la lista —</option>${lists.map((l) => `<option value="${esc(l.id)}">${esc(l.name)}</option>`).join("")}</select></div>
       <div class="frow"><span class="fl">Título</span><input type="text" id="ncTitle" class="full" placeholder='qué se ve, pero qué pasa en realidad (ej: el contador dice "Holding…", pero…)'></div>
       <div class="preview" id="ncPrev"></div>
