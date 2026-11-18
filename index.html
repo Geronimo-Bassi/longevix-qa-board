@@ -207,7 +207,7 @@
   #actMsg:empty { display: none; }
   #actMsg { margin-top: 8px; }
 
-  /* filter dropdowns (multi-select) and quick presets */
+  /* filter dropdowns (multi-select) */
   .fdds { display: contents; }
   .fdd { position: relative; }
   .fdd > summary { list-style: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); cursor: pointer; white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
@@ -218,18 +218,8 @@
   .fdd .ddm label:hover { background: var(--chip); }
   .fdd .ddm .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
   .fdd .ddm .fclr { width: 100%; margin-top: 4px; justify-content: center; font-size: 12.5px; color: var(--accent); border-color: transparent; background: none; }
-  .quick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 20px 12px; margin-top: -4px; }
-  .quick .ql { color: var(--muted); font-size: 12.5px; margin-right: 2px; }
-  .quick button { padding: 3px 10px; font-size: 12.5px; border-radius: 999px; }
-  .quick button.on { background: var(--accent-btn); border-color: var(--accent-btn); color: #fff; }
   kbd { font: 11px ui-monospace, Consolas, monospace; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; color: var(--muted); }
 
-  /* tablero: group-by switch */
-  .viewbar { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; color: var(--muted); }
-  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
-  .seg a { padding: 4px 12px; text-decoration: none; color: var(--muted); font-size: 13px; }
-  .seg a + a { border-left: 1px solid var(--line); }
-  .seg a.on { background: var(--chip); color: var(--text); font-weight: 600; }
 
   /* keyboard focus on clickable rows/cards */
   tr.row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
@@ -335,7 +325,6 @@
     .filters input[type=search] { min-width: 0; flex: 1 1 100%; }
     .filters select { flex: 1 1 calc(50% - 4px); min-width: 0; }
     .fdd { flex: 1 1 calc(50% - 4px); min-width: 0; } .fdd > summary { width: 100%; max-width: none; }
-    .quick { padding: 0 16px 12px; }
     .abar .sep { display: none; }
     main { padding: 0 16px 32px; }
     .banner { margin: 12px 16px; }
@@ -401,9 +390,10 @@
 <div class="progress"><div id="bar"></div></div>
 <div id="banner"></div>
 <nav class="tabs">
-  <a href="#tablero" data-view="tablero" id="tabBoard">Tablero</a>
+  <a href="#tablero" data-view="tablero">Tablero</a>
   <a href="#tabla" data-view="tabla">Tabla</a>
   <a href="#listas" data-view="listas">Por lista</a>
+  <a href="#estado" data-view="estado">Por estado</a>
   <a href="#resumen" data-view="resumen">Resumen</a>
 </nav>
 <div class="filters" id="filters">
@@ -412,7 +402,6 @@
   <label class="chk"><input type="checkbox" id="hideIdx" checked> Ocultar Pendientes / Resumen</label>
   <button id="clearF" hidden></button>
 </div>
-<div class="quick" id="quick"></div>
 <main id="main"></main>
 <aside class="drawer" id="drawer"></aside>
 <div class="modal" id="modal"></div>
@@ -705,25 +694,11 @@
     saveFilters();
     if (stay || route().view === "tabla") render(); else location.hash = "tabla";
   }
-  // Quick presets: one tap sets a common combination; tapping it again clears it.
-  const QUICK = [
-    ["Mis tarjetas", () => (me ? { fTester: [me.fullName] } : null)],
-    ["Para rechequear", () => ({ fEstado: ["Rechequear"] })],
-    ["P1 abiertos", () => ({ fPrio: ["P1"], fEstado: ["Rechequear", "Reportado", "Sin etiqueta"] })],
-  ];
-  function presetActive(f) {
-    if (!f || $("q").value.trim() || !$("hideIdx").checked) return false;
-    return FKEYS.every((k) => { const want = new Set(f[k] || []); return want.size === fsel[k].size && [...want].every((v) => fsel[k].has(v)); });
-  }
   function updateFilterUi() {
     const n = activeFilters();
     $("q").classList.toggle("on", !!$("q").value.trim());
     $("clearF").hidden = !n;
     $("clearF").innerHTML = `${ic("x", 1)} Limpiar filtros (${n})`;
-    $("quick").innerHTML = `<span class="ql">Atajos:</span>` + QUICK.map(([label, f], i) => {
-      const preset = f();
-      return `<button data-quick="${i}" class="${presetActive(preset) ? "on" : ""}" ${preset ? "" : `disabled title="Se activa cuando se carga tu usuario"`}>${label}</button>`;
-    }).join("");
   }
   const emptyState = (txt) => `<div class="empty">${txt || "Ninguna tarjeta con estos filtros."}${activeFilters() ? `<div class="emptyAct"><button data-clear="1">${ic("x", 1)} Limpiar filtros</button></div>` : ""}</div>`;
   function skeleton() {
@@ -752,8 +727,6 @@
   const currentView = () => route().view;
   const cardKey = (c) => ((c.url || "").match(/\/c\/([\w-]+)/) || [])[1] || c.id;
   const findCard = (k) => cards.find((c) => cardKey(c) === k || c.id === k);
-  const GROUP_KEY = "lgx-group";
-  const savedGroup = () => { try { return localStorage.getItem(GROUP_KEY) === "estado" ? "estado" : "tablero"; } catch (e) { return "tablero"; } };
 
   // Re-rendering replaces the view's HTML: keep the scroll of the board, its lists and the page.
   function saveScroll() {
@@ -782,11 +755,8 @@
 
   function render() {
     const v = currentView();
-    const boardView = v === "tablero" || v === "estado";
-    if (boardView) { try { localStorage.setItem(GROUP_KEY, v); } catch (e) {} }
-    $("tabBoard").href = "#" + (boardView ? v : savedGroup());
-    document.querySelectorAll("nav.tabs a").forEach((a) => a.classList.toggle("active", a.dataset.view === (boardView ? "tablero" : v)));
-    $("filters").style.display = $("quick").style.display = v === "resumen" ? "none" : "";
+    document.querySelectorAll("nav.tabs a").forEach((a) => a.classList.toggle("active", a.dataset.view === v));
+    $("filters").style.display = v === "resumen" ? "none" : "";
     updateFilterUi();
     if (!lastLoaded) { if (token && loading) $("main").innerHTML = skeleton(); return; }
     const st = saveScroll();
@@ -815,7 +785,6 @@
       `</tbody></table><p class="status">"Creada por" sale del historial de Trello. Si dice "(est.)", todavía no se cargó y es una estimación según la cuenta usada en la descripción.</p>` : emptyState());
   }
 
-  const viewbar = (v) => `<div class="viewbar">Agrupar por <div class="seg"><a href="#tablero" class="${v === "tablero" ? "on" : ""}">Lista</a><a href="#estado" class="${v === "estado" ? "on" : ""}">Estado</a></div></div>`;
   const cardFoot = (c) => `${c.desc ? `<span title="Tiene descripción">${ic("text", 1)}</span>` : ""}${c.comments && c.comments.length ? `<span>${ic("chat", 1)} ${c.comments.length}</span>` : ""}${who(c) !== "—" ? `<span>${esc(who(c))}</span>` : ""}`;
 
   // Trello-like view: one column per list, cards in the same order as in Trello.
@@ -823,7 +792,7 @@
   const lcolor = (c) => LCOLORS[String(c || "").replace(/_(dark|light)$/, "")] || "#8590a2";
   function renderTrello(rows) {
     const shown = lists.filter((l) => !fsel.fLista.size || fsel.fLista.has(l.name));
-    $("main").innerHTML = viewbar("tablero") + `<div class="tboard">` + shown.map((l) => {
+    $("main").innerHTML = `<div class="tboard">` + shown.map((l) => {
       const cs = rows.filter((c) => c.listId === l.id).sort((a, b) => a.pos - b.pos);
       return `<div class="tlist"><h3><span>${esc(l.name)}</span><span class="status">${cs.length}</span></h3><div class="tcards" data-k="${esc(l.id)}">` +
         cs.map((c) => `<div class="tcard" tabindex="0" data-id="${esc(c.id)}">` +
@@ -835,7 +804,7 @@
     fillImages($("main"));
   }
 
-  // Same board, grouped by state instead of by list.
+  // "Por estado": the same kind of board, with one column per state.
   function renderBoard(rows) {
     const open = (c) => c.estado !== "Rechequear" && c.estado !== "FIXED";
     const cols = [
@@ -849,7 +818,7 @@
       ["Mejora", (c) => open(c) && c.tipo === "Mejora", "mejora"],
       ["Pendientes / Resumen", (c) => c.tipo === "Índice", "idx"],
     ];
-    $("main").innerHTML = viewbar("estado") + `<div class="tboard">` + cols.map(([t, f, k]) => {
+    $("main").innerHTML = `<div class="tboard">` + cols.map(([t, f, k]) => {
       const cs = rows.filter(f);
       if (k === "idx" && $("hideIdx").checked) return "";
       return `<div class="tlist kc k-${k}"><h3><span>${esc(t)}</span><span class="n">${cs.length}</span></h3><div class="tcards" data-k="${k}">` +
@@ -1694,7 +1663,7 @@
     if ((e.key === "Enter" || e.key === " ") && e.target.matches("tr.row, .tcard") && activate(e.target)) e.preventDefault();
   });
 
-  // Filters: multi-select dropdowns, quick presets, clear.
+  // Filters: multi-select dropdowns, clear.
   $("fdds").addEventListener("change", (e) => {
     const d = e.target.closest("details[data-k]"); if (!d) return;
     const k = d.dataset.k;
@@ -1709,11 +1678,6 @@
     fsel[b.dataset.k].clear(); renderFdds(); saveFilters(); render();
   });
   $("fdds").addEventListener("toggle", (e) => { if (e.target.open) $("fdds").querySelectorAll("details[open]").forEach((o) => o !== e.target && (o.open = false)); }, true);
-  $("quick").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-quick]"); if (!b || b.disabled) return;
-    const preset = QUICK[+b.dataset.quick][1]();
-    applyFilters(presetActive(preset) ? {} : preset, true);
-  });
   ["q", "hideIdx"].forEach((id) => $(id).addEventListener("input", () => { saveFilters(); render(); }));
   $("clearF").onclick = () => applyFilters({}, true);
 
