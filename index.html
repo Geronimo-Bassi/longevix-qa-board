@@ -6,12 +6,16 @@
 <title>Longevix QA · Vistas del tablero Scheduling</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-<meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#161615" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f7f5" data-def="#f7f7f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161615" data-def="#161615" media="(prefers-color-scheme: dark)">
+<script>
+  // Apply the saved theme before the first paint (no flash). No saved value = follow the system.
+  try { const t = localStorage.getItem("lgx-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 <style>
   :root {
     --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #6b6b66; --line: #e4e3df;
-    --accent: #2f5bd3; --chip: #efeee9; --danger: #dc2626; --warn: #b45309;
+    --accent: #2f5bd3; --accent-btn: #2f5bd3; --chip: #efeee9; --danger: #dc2626; --warn: #b45309;
     /* type, state and priority colors: one hue each, never shared */
     --bug: #2563eb; --mejora: #0d9488; --duda: #db2777; --bloq: #ea580c; --parcial: #ca8a04; --indice: #64748b;
     --p1: #dc2626;
@@ -19,10 +23,24 @@
     --tint: 13%; --ink: #000; --ink-mix: 18%;
     --shadow: 0 1px 2px rgba(0,0,0,.06), 0 1px 1px rgba(0,0,0,.04);
   }
+  :root { color-scheme: light dark; --scroll: rgba(0,0,0,.22); --scroll-hover: rgba(0,0,0,.38); }
+  :root[data-theme="light"] { color-scheme: light; }
+  /* Dark theme: follows the system unless the viewer picked a theme with the header button. */
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #161615; --panel: #1f1f1d; --text: #ecebe6; --muted: #a09f99; --line: #33332f; --chip: #2a2a27; --accent: #7c9cf5; --warn: #f59e0b;
-      --rep: #94a3b8; --tint: 22%; --ink: #fff; --ink-mix: 45%; --shadow: none; }
+    :root:not([data-theme="light"]) { --bg: #161615; --panel: #1f1f1d; --text: #ecebe6; --muted: #a09f99; --line: #33332f; --chip: #2a2a27; --accent: #7c9cf5; --warn: #f59e0b;
+      --rep: #94a3b8; --tint: 22%; --ink: #fff; --ink-mix: 45%; --shadow: none;
+      --scroll: rgba(255,255,255,.2); --scroll-hover: rgba(255,255,255,.34); }
   }
+  :root[data-theme="dark"] { color-scheme: dark; --bg: #161615; --panel: #1f1f1d; --text: #ecebe6; --muted: #a09f99; --line: #33332f; --chip: #2a2a27; --accent: #7c9cf5; --warn: #f59e0b;
+      --rep: #94a3b8; --tint: 22%; --ink: #fff; --ink-mix: 45%; --shadow: none;
+    --scroll: rgba(255,255,255,.2); --scroll-hover: rgba(255,255,255,.34); }
+
+  /* Thin scrollbars that follow the theme (Firefox/Chrome use the standard props, Safari the ::-webkit ones). */
+  * { scrollbar-width: thin; scrollbar-color: var(--scroll) transparent; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--scroll); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover { background-color: var(--scroll-hover); }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
@@ -42,7 +60,7 @@
   button { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
   button:hover { border-color: var(--accent); }
   button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.primary { background: var(--accent-btn); color: #fff; border-color: var(--accent-btn); }
   button.primary:hover { filter: brightness(1.08); }
   button.iconbtn { padding: 6px 8px; }
   button:disabled { opacity: .5; cursor: default; }
@@ -61,6 +79,7 @@
   .mlist button.danger { color: var(--danger); }
 
   nav.tabs { display: flex; gap: 4px; padding: 0 20px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+  nav.tabs::-webkit-scrollbar { display: none; }
   nav.tabs a { padding: 8px 14px; text-decoration: none; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
   nav.tabs a:hover { color: var(--text); }
   nav.tabs a.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
@@ -260,6 +279,9 @@
   <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
   <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
   <symbol id="i-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></symbol>
 </svg>
 <header>
@@ -270,6 +292,7 @@
   </div>
   <span class="grow"></span>
   <div class="hactions">
+    <button id="theme" class="iconbtn" type="button"></button>
     <button id="refresh" class="iconbtn" disabled title="Actualizar ahora" aria-label="Actualizar"><svg class="ic"><use href="#i-refresh"/></svg></button>
     <button id="newCard" class="primary" disabled><svg class="ic"><use href="#i-plus"/></svg><span class="lbl">Nueva tarjeta</span></button>
     <button id="connect" class="primary" hidden>Conectar Trello</button>
@@ -1406,6 +1429,24 @@
     if (!token) { $("newCard").disabled = true; $("who").textContent = "—"; $("avatar").textContent = "·"; }
   }
   $("connect").onclick = () => (location.href = authUrl());
+
+  // ---------- theme: system -> light -> dark ----------
+  const THEMES = ["system", "light", "dark"];
+  const THEME_UI = { system: ["monitor", "Tema del sistema"], light: ["sun", "Tema claro"], dark: ["moon", "Tema oscuro"] };
+  function savedTheme() { try { const t = localStorage.getItem("lgx-theme"); return THEMES.includes(t) ? t : "system"; } catch (e) { return "system"; } }
+  function applyTheme(t) {
+    const root = document.documentElement;
+    if (t === "system") delete root.dataset.theme; else root.dataset.theme = t;
+    try { if (t === "system") localStorage.removeItem("lgx-theme"); else localStorage.setItem("lgx-theme", t); } catch (e) {}
+    const [icon, label] = THEME_UI[t];
+    const next = THEME_UI[THEMES[(THEMES.indexOf(t) + 1) % THEMES.length]][1].toLowerCase();
+    $("theme").innerHTML = ic(icon);
+    $("theme").title = `${label}. Tocá para pasar a ${next}.`;
+    $("theme").setAttribute("aria-label", `${label}. Cambiar a ${next}`);
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => (m.content = t === "system" ? m.dataset.def : t === "dark" ? "#161615" : "#f7f7f5"));
+  }
+  $("theme").onclick = () => applyTheme(THEMES[(THEMES.indexOf(savedTheme()) + 1) % THEMES.length]);
+  applyTheme(savedTheme());
   function showConnect(extra) {
     $("status").textContent = "Sin conectar";
     showBanner(`${extra ? esc(extra) + "<br>" : ""}Para ver el tablero, conectá tu cuenta de Trello. Se abre trello.com, tocás <b>Allow</b> y volvés acá. El permiso dura 30 días y queda solo en este navegador. <button class="primary" id="connect2">Conectar Trello</button>`, extra ? "err" : "");
