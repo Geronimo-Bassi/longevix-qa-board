@@ -567,6 +567,7 @@
   // ---------- load ----------
   async function load() {
     if (loading || !token) return;
+    imgBlocked = false; imgFails = 0; showImgDiag.done = false; // each refresh tries the images again
     loading = true;
     $("refresh").disabled = true;
     $("refresh").classList.add("spin");
@@ -1382,7 +1383,10 @@
   }
   // Trello serves uploaded files only to authenticated requests. Several ways are tried, and the first one
   // that works is remembered for the rest of the images.
+  // The method that worked last time is remembered, so it is tried first on the next visit.
   let imgMode = null;
+  try { imgMode = localStorage.getItem("lgx-img-mode") || null; } catch (e) {}
+  let imgFails = 0;
   const imgDiag = [];
   window.lgxImgDiag = imgDiag;
   const apiHost = (u) => u.replace(/^https:\/\/trello\.com\/1\//, "https://api.trello.com/1/");
@@ -1430,8 +1434,15 @@
     const pr = (async () => {
       await probe(src);
       let last;
-      for (const m of imgMode ? [imgMode] : Object.keys(IMG_METHODS)) {
-        try { const u = await IMG_METHODS[m](src); imgMode = m; return u; }
+      // Try the method that worked before first, but never only that one: a session cookie can expire.
+      const order = Object.keys(IMG_METHODS).sort((a, b) => (b === imgMode) - (a === imgMode));
+      for (const m of order) {
+        try {
+          const u = await IMG_METHODS[m](src);
+          if (imgMode !== m) { imgMode = m; try { localStorage.setItem("lgx-img-mode", m); } catch (e) {} }
+          imgFails = 0; imgBlocked = false;
+          return u;
+        }
         catch (e) {
           last = e;
           const why = e && (e.status || e.code) || (e && e.message) || String(e);
@@ -1456,7 +1467,8 @@
       const src = el.dataset.src; el.removeAttribute("data-src");
       if (imgBlocked) return imgFallback(el);
       try { el.src = await imgUrl(src); }
-      catch (e) { if (!imgMode) { imgBlocked = true; showImgDiag(); } imgFallback(el); }
+      // One broken image (deleted file, odd type) must not hide the rest: give up only after 3 in a row fail.
+      catch (e) { if (++imgFails >= 3) { imgBlocked = true; showImgDiag(); } imgFallback(el); }
     });
   }
   function showImage(src, href) {
