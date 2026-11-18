@@ -1112,13 +1112,44 @@
     const ps = (a.previews || []).filter((p) => p.url).sort((x, y) => x.width - y.width);
     return ((ps.find((p) => p.width >= w) || ps[ps.length - 1]) || {}).url || a.url;
   }
-  // Trello serves uploaded files only with the OAuth header, so <img src> can't load them directly.
+  // Trello serves uploaded files only to authenticated requests. Several ways are tried, and the first one
+  // that works is remembered for the rest of the images.
+  let imgMode = null;
+  const imgDiag = [];
+  window.lgxImgDiag = imgDiag;
+  const apiHost = (u) => u.replace(/^https:\/\/trello\.com\/1\//, "https://api.trello.com/1/");
+  async function viaFetch(u) {
+    const res = await fetch(u, { headers: { Authorization: `OAuth oauth_consumer_key="${TRELLO_KEY}", oauth_token="${token}"` } });
+    if (!res.ok) throw { code: "http", status: res.status };
+    const b = await res.blob();
+    if (!/^image\//.test(b.type)) throw { code: "no es imagen (" + (b.type || "?") + ")" };
+    return URL.createObjectURL(b);
+  }
+  function viaQuery(u) {
+    return new Promise((ok, ko) => {
+      const url = new URL(apiHost(u));
+      url.searchParams.set("key", TRELLO_KEY);
+      url.searchParams.set("token", token);
+      const im = new Image();
+      im.onload = () => ok(url.href);
+      im.onerror = () => ko({ code: "img" });
+      im.src = url.href;
+    });
+  }
+  const IMG_METHODS = { api: (u) => viaFetch(apiHost(u)), web: (u) => viaFetch(u), query: viaQuery };
   function imgUrl(src) {
     if (imgCache.has(src)) return imgCache.get(src);
     const pr = (async () => {
-      const res = await fetch(src, { headers: { Authorization: `OAuth oauth_consumer_key="${TRELLO_KEY}", oauth_token="${token}"` } });
-      if (!res.ok) throw { code: "http", status: res.status };
-      return URL.createObjectURL(await res.blob());
+      let last;
+      for (const m of imgMode ? [imgMode] : Object.keys(IMG_METHODS)) {
+        try { const u = await IMG_METHODS[m](src); imgMode = m; return u; }
+        catch (e) {
+          last = e;
+          const why = e && (e.status || e.code) || (e && e.message) || String(e);
+          if (imgDiag.length < 12) imgDiag.push(`${m}: ${why}`);
+        }
+      }
+      throw last || { code: "img" };
     })();
     imgCache.set(src, pr);
     pr.catch(() => imgCache.delete(src));
@@ -1136,7 +1167,7 @@
       const src = el.dataset.src; el.removeAttribute("data-src");
       if (imgBlocked) return imgFallback(el);
       try { el.src = await imgUrl(src); }
-      catch (e) { if (!e || e.code !== "http" || e.status !== 404) imgBlocked = true; imgFallback(el); }
+      catch (e) { if (!imgMode) imgBlocked = true; imgFallback(el); }
     });
   }
   function showImage(src, href) {
@@ -1157,7 +1188,9 @@
       ? `<a class="att" data-ai="${i}" title="${esc(a.name)}"><img alt="" data-src="${esc(pickPreview(a, 260))}" data-href="${esc(a.url)}">${esc(a.name)}</a>`
       : `<a class="att file" href="${esc(a.url)}" target="_blank" rel="noopener">${ic("file", 1)}&nbsp;${esc(a.name || a.url)}</a>`).join("");
     $("atts").querySelectorAll("a[data-ai]").forEach((el) => (el.onclick = (ev) => { ev.preventDefault(); const a = atts[+el.dataset.ai]; showImage(a.url, a.url); }));
-    fillImages($("atts"));
+    await fillImages($("atts"));
+    if (imgBlocked && $("atts") && openCardId === c.id)
+      $("atts").insertAdjacentHTML("beforeend", `<p class="meta" style="grid-column:1/-1">No se pudieron mostrar las imágenes acá. Detalle técnico: ${esc([...new Set(imgDiag)].join(" · ") || "sin datos")}</p>`);
   }
   function stamp() { const d = new Date(), z = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`; }
   // Pasted screenshots arrive as "image.png": give them a useful name (case + time).
