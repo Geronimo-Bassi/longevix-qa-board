@@ -62,6 +62,16 @@
   .tcard .badges { display: flex; gap: 10px; color: var(--muted); font-size: 12px; margin-top: 5px; }
   .tadd { text-align: left; border: none; background: transparent; color: var(--muted); padding: 6px; width: 100%; }
   .tadd:hover { background: var(--line); color: var(--text); }
+  .tcover { display: block; width: 100%; max-height: 170px; min-height: 50px; object-fit: cover; border-radius: 6px; margin-bottom: 6px; background: var(--line); }
+  .imgfail { display: inline-block; font-size: 12px; color: var(--accent); margin-bottom: 4px; }
+  .atts { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+  .att { border: 1px solid var(--line); border-radius: 8px; padding: 4px; font-size: 12px; color: var(--muted); text-decoration: none; word-break: break-all; background: var(--bg); cursor: pointer; }
+  .att img { display: block; width: 100%; height: 90px; object-fit: cover; border-radius: 5px; background: var(--line); margin-bottom: 3px; }
+  .att.file { display: flex; align-items: center; min-height: 40px; }
+  .drop { border: 2px dashed var(--line); border-radius: 10px; padding: 12px; text-align: center; color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .drop.over, .drawer.over .drop { border-color: var(--accent); color: var(--accent); }
+  .drop a { color: var(--accent); }
+  .pfile { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; margin: 4px 4px 0 0; font-size: 12px; }
   .board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(260px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
   .col { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px; min-height: 120px; }
   .col h3 { margin: 0 0 8px; font-size: 14px; display: flex; justify-content: space-between; }
@@ -168,7 +178,9 @@
   const ESTADOS = ["Rechequear", "Reportado", "FIXED", "Sin etiqueta"];
   const PRIOS = ["P1", "P2", "P3", "—"];
   const LABELS = {}; // label name -> id, filled from the board's labels
-  const CARD_FIELDS = "name,desc,idList,labels,shortUrl,dateLastActivity,closed,pos";
+  const CARD_FIELDS = "name,desc,idList,labels,shortUrl,dateLastActivity,closed,pos,idAttachmentCover";
+  const ATT_FIELDS = "id,name,mimeType,url,previews,isUpload,bytes,date";
+  const COVER_Q = { attachments: "cover", attachment_fields: ATT_FIELDS };
   const ACT_FILTER = "createCard,copyCard,convertToCardFromCheckItem,commentCard";
   const STATE_LABELS = ["FIXED", "Rechequear", "Reportado"];
   const EDIT_LABELS = ["BUG", "MEJORA", "DUDA", "BLOQUEADO", "PARCIAL", "P1", "P2", "P3"];
@@ -193,7 +205,8 @@
   function mapCard(c) {
     const l = lists.find((x) => x.id === c.idList);
     return { id: c.id, name: c.name, desc: c.desc, url: c.shortUrl, closed: c.closed, labels: c.labels || [],
-      list: { id: c.idList, name: l ? l.name : "" }, lastActivityAt: c.dateLastActivity, pos: c.pos };
+      list: { id: c.idList, name: l ? l.name : "" }, lastActivityAt: c.dateLastActivity, pos: c.pos,
+      cover: (c.attachments || []).find((a) => a.id === c.idAttachmentCover && a.isUpload && isImg(a)) || null };
   }
   function setLabels(labs) {
     for (const k in LABELS) delete LABELS[k];
@@ -246,6 +259,7 @@
       labels: (c.labels || []).map((l) => l.name),
       last: c.lastActivityAt ? new Date(c.lastActivityAt) : null,
       pos: c.pos || 0,
+      cover: c.cover || null,
       labelObjs: (c.labels || []).map((l) => ({ name: l.name, color: l.color })),
     };
   }
@@ -281,6 +295,7 @@
     url.searchParams.set("token", token);
     const opts = { method, cache: "no-store" };
     if (method === "GET") { for (const k in params || {}) url.searchParams.set(k, params[k]); }
+    else if (params instanceof FormData) { opts.body = params; }
     else if (params) { opts.body = new URLSearchParams(params); }
     const waits = [2000, 5000, 12000];
     for (let attempt = 0; ; attempt++) {
@@ -315,7 +330,8 @@
       const [ls, labs, cs] = await Promise.all([
         api("GET", `/boards/${BOARD_ID}/lists`, { filter: "open", fields: "name,pos" }),
         api("GET", `/boards/${BOARD_ID}/labels`, { fields: "name,color", limit: 1000 }),
-        api("GET", `/boards/${BOARD_ID}/cards`, { filter: "open", fields: CARD_FIELDS }),
+        api("GET", `/boards/${BOARD_ID}/cards`, { filter: "open", fields: CARD_FIELDS, ...COVER_Q })
+          .catch((e) => e && e.status === 400 ? api("GET", `/boards/${BOARD_ID}/cards`, { filter: "open", fields: CARD_FIELDS }) : Promise.reject(e)),
       ]);
       lists = ls || [];
       setLabels(labs);
@@ -437,11 +453,13 @@
       const cs = rows.filter((c) => c.listId === l.id).sort((a, b) => a.pos - b.pos);
       return `<div class="tlist"><h3><span>${esc(l.name)}</span><span class="status">${cs.length}</span></h3><div class="tcards">` +
         cs.map((c) => `<div class="tcard" data-id="${esc(c.id)}">` +
+          (c.cover ? `<img class="tcover" alt="" data-src="${esc(pickPreview(c.cover, 300))}" data-href="${esc(c.url)}">` : "") +
           (c.labelObjs.length ? `<div class="lbls">${c.labelObjs.map((x) => `<span class="lbl" style="background:${lcolor(x.color)}" title="${esc(x.name)}"></span>`).join("")}</div>` : "") +
           `<div class="n">${esc(c.name)}</div>` +
           `<div class="badges">${c.desc ? "<span>≡</span>" : ""}${c.comments && c.comments.length ? `<span>💬 ${c.comments.length}</span>` : ""}${who(c) !== "—" ? `<span>${esc(who(c))}</span>` : ""}</div></div>`).join("") +
         `</div><button class="tadd" data-newlist="${esc(l.id)}">＋ Añadí una tarjeta</button></div>`;
     }).join("") + `</div>`;
+    fillImages($("main"));
   }
 
   function renderBoard(rows) {
@@ -531,6 +549,11 @@
         <div id="actMsg" class="status"></div>
       </div>
       <div class="desc">${mdLite(c.desc) || "<i>Sin descripción</i>"}</div>
+      <h3 class="ctitle">📎 Adjuntos</h3>
+      <div id="atts" class="atts"><p class="meta">Cargando adjuntos…</p></div>
+      <div class="drop" id="drop">📷 Arrastrá capturas acá, pegalas con <b>Ctrl+V</b> o <a href="#" id="pickFile">elegí archivos</a>
+        <input type="file" id="fileIn" accept="image/*,video/*,.pdf,.txt,.log,.har,.json" multiple hidden></div>
+      <div id="upMsg" class="status"></div>
       <h3 class="ctitle">💬 Comentarios</h3>
       <div class="newcmt"><div class="mwrap"><textarea id="cmtText" placeholder="Escribí un comentario… (escribí @ para mencionar)"></textarea></div>
         <div class="mbtns" style="margin-top:6px"><span id="cmtMsg" class="status" style="flex:1"></span><button id="cmtSend" class="primary">Comentar</button></div></div>
@@ -541,6 +564,9 @@
     openCardId = c.id;
     attachMentions($("cmtText"));
     wireComments(c);
+    $("pickFile").onclick = (ev) => { ev.preventDefault(); $("fileIn").click(); };
+    $("fileIn").onchange = () => { const f = [...$("fileIn").files]; $("fileIn").value = ""; uploadToCard(c, f); };
+    loadAttachments(c);
     $("cmtSend").onclick = () => {
       const text = $("cmtText").value.trim();
       if (!text) { $("cmtMsg").textContent = "Escribí el comentario."; return; }
@@ -801,11 +827,17 @@
       <div id="ncDups"></div>
       <div class="frow"><span class="fl">Descripción</span><span class="preview">Plantilla según el tipo. Completá los campos; borrá los que no apliquen.</span></div>
       <textarea id="ncDesc"></textarea>
-      <p class="meta">Las capturas no se pueden subir desde acá: arrastralas a la tarjeta en Trello después de crearla.</p>
+      <div class="drop" id="ncDrop">📷 Capturas: arrastralas acá, pegalas con <b>Ctrl+V</b> o <a href="#" id="ncPick">elegí archivos</a>
+        <input type="file" id="ncFile" accept="image/*,video/*,.pdf,.txt,.log,.har,.json" multiple hidden><div id="ncFiles"></div></div>
       <div id="ncMsg" class="status"></div>
       <div class="mbtns"><button id="ncCancel">Cancelar</button><button id="ncCreate" class="primary">Revisar y crear</button></div>
     </div>`;
     m.classList.add("open");
+    pendingFiles = [];
+    pendingCase = () => $("ncCase").value.trim();
+    renderPending();
+    $("ncPick").onclick = (ev) => { ev.preventDefault(); $("ncFile").click(); };
+    $("ncFile").onchange = () => { addPending([...$("ncFile").files]); $("ncFile").value = ""; };
     let touched = false;
     const tipo = () => m.querySelector("input[name=ncTipo]:checked").value;
     const prio = () => m.querySelector("input[name=ncPrio]:checked").value;
@@ -832,7 +864,7 @@
       if (btn.dataset.confirm !== "1") {
         btn.dataset.confirm = "1";
         btn.textContent = "Confirmar: crear en Trello";
-        $("ncMsg").innerHTML = `Se va a crear <b>${esc(data.name)}</b> en <b>${esc(data.listName)}</b> con las etiquetas ${TYPE_LABEL[data.tipo]} y ${data.prio}. Lo ven todos los del tablero.`;
+        $("ncMsg").innerHTML = `Se va a crear <b>${esc(data.name)}</b> en <b>${esc(data.listName)}</b> con las etiquetas ${TYPE_LABEL[data.tipo]} y ${data.prio}${pendingFiles.length ? ` y ${pendingFiles.length} adjunto(s)` : ""}. Lo ven todos los del tablero.`;
         return;
       }
       createCard(data);
@@ -852,11 +884,150 @@
       btn.disabled = false; $("ncCancel").disabled = false;
       return;
     }
+    let ok = 0;
+    const files = pendingFiles.slice();
+    for (const f of files) {
+      $("ncMsg").textContent = `Tarjeta creada. Subiendo adjuntos ${ok + 1}/${files.length}…`;
+      try { await uploadOne(card.id, f); ok++; } catch (e) { break; }
+    }
+    pendingFiles = [];
     await reloadLists([d.listId]);
     $("modal").classList.remove("open");
     openCard(card.id);
-    if ($("actMsg")) $("actMsg").textContent = "✔ Tarjeta creada. Arrastrá las capturas en Trello (link de arriba).";
+    if ($("actMsg")) $("actMsg").textContent = files.length && ok < files.length
+      ? `✔ Tarjeta creada, pero se subieron ${ok} de ${files.length} adjuntos. Subí los que faltan abajo, en Adjuntos.`
+      : `✔ Tarjeta creada${ok ? ` con ${ok} adjunto(s)` : ""}.`;
   }
+
+  // ---------- attachments: view + upload ----------
+  const MAX_MB = 10;
+  let pendingFiles = [];
+  let pendingCase = () => "";
+  const imgCache = new Map();
+  let imgBlocked = false;
+  function isImg(a) { return /^image\//.test(a.mimeType || "") || /\.(png|jpe?g|gif|webp|bmp)$/i.test(a.name || a.url || ""); }
+  function pickPreview(a, w) {
+    const ps = (a.previews || []).filter((p) => p.url).sort((x, y) => x.width - y.width);
+    return ((ps.find((p) => p.width >= w) || ps[ps.length - 1]) || {}).url || a.url;
+  }
+  // Trello serves uploaded files only with the OAuth header, so <img src> can't load them directly.
+  function imgUrl(src) {
+    if (imgCache.has(src)) return imgCache.get(src);
+    const pr = (async () => {
+      const res = await fetch(src, { headers: { Authorization: `OAuth oauth_consumer_key="${TRELLO_KEY}", oauth_token="${token}"` } });
+      if (!res.ok) throw { code: "http", status: res.status };
+      return URL.createObjectURL(await res.blob());
+    })();
+    imgCache.set(src, pr);
+    pr.catch(() => imgCache.delete(src));
+    return pr;
+  }
+  function imgFallback(el) {
+    const a = document.createElement("a");
+    a.href = el.dataset.href || "#"; a.target = "_blank"; a.rel = "noopener"; a.className = "imgfail"; a.textContent = "🖼 Ver imagen en Trello";
+    a.onclick = (ev) => ev.stopPropagation();
+    el.replaceWith(a);
+  }
+  async function fillImages(root) {
+    const els = [...root.querySelectorAll("img[data-src]")];
+    await pool(els, 3, async (el) => {
+      const src = el.dataset.src; el.removeAttribute("data-src");
+      if (imgBlocked) return imgFallback(el);
+      try { el.src = await imgUrl(src); }
+      catch (e) { if (!e || e.code !== "http" || e.status !== 404) imgBlocked = true; imgFallback(el); }
+    });
+  }
+  function showImage(src, href) {
+    const m = $("modal");
+    m.innerHTML = `<div class="mbox wide" style="text-align:center"><img id="lbImg" alt="" style="max-width:100%;max-height:76vh;border-radius:8px"><div class="mbtns"><a href="${esc(href)}" target="_blank" rel="noopener" style="margin-right:auto;color:var(--accent)">Abrir en Trello ↗</a><button id="lbClose">Cerrar</button></div></div>`;
+    m.classList.add("open");
+    $("lbClose").onclick = () => m.classList.remove("open");
+    imgUrl(src).then((u) => { if ($("lbImg")) $("lbImg").src = u; }).catch(() => { const el = $("lbImg"); if (el) { el.dataset.href = href; imgFallback(el); } });
+  }
+  async function loadAttachments(c) {
+    let atts;
+    try { atts = await api("GET", `/cards/${c.id}/attachments`, { fields: ATT_FIELDS }); }
+    catch (e) { if ($("atts") && openCardId === c.id) $("atts").innerHTML = `<p class="meta">No se pudieron leer los adjuntos: ${esc(errText(e))}</p>`; return; }
+    if (!$("atts") || openCardId !== c.id) return;
+    atts = (atts || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+    if (!atts.length) { $("atts").innerHTML = `<p class="meta">Sin adjuntos.</p>`; return; }
+    $("atts").innerHTML = atts.map((a, i) => a.isUpload && isImg(a)
+      ? `<a class="att" data-ai="${i}" title="${esc(a.name)}"><img alt="" data-src="${esc(pickPreview(a, 260))}" data-href="${esc(a.url)}">${esc(a.name)}</a>`
+      : `<a class="att file" href="${esc(a.url)}" target="_blank" rel="noopener">📄 ${esc(a.name || a.url)}</a>`).join("");
+    $("atts").querySelectorAll("a[data-ai]").forEach((el) => (el.onclick = (ev) => { ev.preventDefault(); const a = atts[+el.dataset.ai]; showImage(a.url, a.url); }));
+    fillImages($("atts"));
+  }
+  function stamp() { const d = new Date(), z = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`; }
+  // Pasted screenshots arrive as "image.png": give them a useful name (case + time).
+  function named(files, caso) {
+    return files.map((f, i) => {
+      if (f.name && f.name !== "image.png") return f;
+      const ext = (f.type.split("/")[1] || "png").replace("jpeg", "jpg");
+      return new File([f], `${caso && caso !== "—" ? caso + "-" : ""}captura-${stamp()}${files.length > 1 ? "-" + (i + 1) : ""}.${ext}`, { type: f.type });
+    });
+  }
+  const tooBig = (f) => f.size > MAX_MB * 1024 * 1024;
+  const kb = (n) => n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
+  async function uploadOne(cardId, f) {
+    const fd = new FormData();
+    fd.append("file", f, f.name);
+    fd.append("name", f.name);
+    return api("POST", `/cards/${cardId}/attachments`, fd);
+  }
+  function uploadToCard(c, files) {
+    files = named(files.filter(Boolean), c.caseId);
+    if (!files.length) return;
+    const big = files.filter(tooBig);
+    if (big.length) { $("upMsg").textContent = `No se puede subir: ${big.map((f) => f.name).join(", ")} pesa más de ${MAX_MB} MB (límite de Trello gratis).`; return; }
+    confirmBox(`<h3>Subir ${files.length} adjunto(s)</h3><p class="meta">${esc(c.caseId)} · ${esc(c.title)}</p><p>${files.map((f) => `📎 ${esc(f.name)} <span class="meta">(${kb(f.size)})</span>`).join("<br>")}</p><p class="meta">Se suben a la tarjeta en Trello y los ve todo el tablero.</p>`, async () => {
+      let ok = 0;
+      for (const f of files) {
+        if ($("upMsg")) $("upMsg").textContent = `Subiendo ${ok + 1}/${files.length}…`;
+        try { await uploadOne(c.id, f); ok++; }
+        catch (e) { if ($("upMsg")) $("upMsg").textContent = (ok ? `Se subieron ${ok} de ${files.length}. ` : "") + writeErr(e); break; }
+      }
+      if (ok === files.length && $("upMsg")) $("upMsg").textContent = `✔ ${ok} adjunto(s) subido(s).`;
+      if (openCardId === c.id) loadAttachments(c);
+    });
+  }
+  function addPending(files) {
+    files = named(files.filter(Boolean), pendingCase());
+    const big = files.filter(tooBig);
+    pendingFiles = pendingFiles.concat(files.filter((f) => !tooBig(f)));
+    renderPending(big.length ? `No se agregó ${big.map((f) => f.name).join(", ")}: pesa más de ${MAX_MB} MB.` : "");
+  }
+  function renderPending(msg) {
+    const box = $("ncFiles"); if (!box) return;
+    box.innerHTML = pendingFiles.map((f, i) => `<span class="pfile">📎 ${esc(f.name)} <span class="meta">${kb(f.size)}</span> <a href="#" data-rm="${i}" title="Quitar">✕</a></span>`).join("") + (msg ? `<div class="warnTxt">${esc(msg)}</div>` : "");
+    box.querySelectorAll("a[data-rm]").forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); pendingFiles.splice(+a.dataset.rm, 1); renderPending(); }));
+  }
+  const filesOf = (dt) => dt ? [...(dt.files || [])].concat(dt.files && dt.files.length ? [] : [...(dt.items || [])].filter((it) => it.kind === "file").map((it) => it.getAsFile())).filter(Boolean) : [];
+  const newCardOpen = () => $("modal").classList.contains("open") && !!$("ncFiles");
+  document.addEventListener("paste", (e) => {
+    const files = filesOf(e.clipboardData);
+    if (!files.length) return;
+    if (newCardOpen()) { e.preventDefault(); addPending(files); }
+    else if ($("drawer").classList.contains("open") && openCardId && !$("modal").classList.contains("open")) {
+      const c = cards.find((x) => x.id === openCardId); if (c) { e.preventDefault(); uploadToCard(c, files); }
+    }
+  });
+  ["dragover", "dragenter"].forEach((t) => {
+    $("drawer").addEventListener(t, (e) => { if (openCardId) { e.preventDefault(); $("drawer").classList.add("over"); } });
+    $("modal").addEventListener(t, (e) => { if (newCardOpen()) { e.preventDefault(); $("ncDrop").classList.add("over"); } });
+  });
+  $("drawer").addEventListener("dragleave", (e) => { if (!$("drawer").contains(e.relatedTarget)) $("drawer").classList.remove("over"); });
+  $("modal").addEventListener("dragleave", (e) => { if ($("ncDrop") && !$("modal").contains(e.relatedTarget)) $("ncDrop").classList.remove("over"); });
+  $("drawer").addEventListener("drop", (e) => {
+    e.preventDefault(); $("drawer").classList.remove("over");
+    const c = cards.find((x) => x.id === openCardId); if (c) uploadToCard(c, filesOf(e.dataTransfer));
+  });
+  $("modal").addEventListener("drop", (e) => {
+    if (!newCardOpen()) return;
+    e.preventDefault(); $("ncDrop").classList.remove("over"); addPending(filesOf(e.dataTransfer));
+  });
+  // Dropping a file outside the targets must not navigate away from the page.
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", (e) => e.preventDefault());
 
   // ---------- activity: creator + comments ----------
   const activityCache = new Map();
@@ -926,7 +1097,8 @@
   async function reloadLists(ids) {
     for (const id of ids) {
       try {
-        const cp = await api("GET", `/lists/${id}/cards`, { fields: CARD_FIELDS });
+        const cp = await api("GET", `/lists/${id}/cards`, { fields: CARD_FIELDS, ...COVER_Q })
+          .catch((e) => e && e.status === 400 ? api("GET", `/lists/${id}/cards`, { fields: CARD_FIELDS }) : Promise.reject(e));
         const nodes = (cp || []).filter((x) => !x.closed).map(mapCard).map(classify);
         const order = new Map(lists.map((l, i) => [l.name, i]));
         nodes.forEach((x) => (x.listOrder = order.has(x.list) ? order.get(x.list) : 999));
