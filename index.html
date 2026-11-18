@@ -462,7 +462,7 @@
       [...new Set(open.map(who))].sort().map((t) => {
         const cs = open.filter((c) => who(c) === t);
         const c2 = (f) => `<td class="num">${cs.filter(f).length}</td>`;
-        return `<tr><td>${t}</td>${c2((c) => c.tipo === "BUG")}${c2((c) => c.tipo === "Duda")}${c2((c) => c.tipo === "Mejora")}${c2((c) => c.tipo === "Bloqueado")}${c2((c) => c.estado === "Rechequear")}</tr>`;
+        return `<tr><td>${esc(t)}</td>${c2((c) => c.tipo === "BUG")}${c2((c) => c.tipo === "Duda")}${c2((c) => c.tipo === "Mejora")}${c2((c) => c.tipo === "Bloqueado")}${c2((c) => c.estado === "Rechequear")}</tr>`;
       }).join("") + `</tbody></table>`;
   }
 
