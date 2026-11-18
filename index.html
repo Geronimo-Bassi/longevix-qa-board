@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Longevix QA · Vistas del tablero Scheduling</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #6b6b66; --line: #e4e3df;
+    --accent: #2f5bd3; --chip: #efeee9;
+    --bug: #2563eb; --mejora: #7c3aed; --duda: #db2777; --bloq: #dc2626; --parcial: #ca8a04; --indice: #64748b;
+    --p1: #dc2626; --p2: #d97706; --p3: #16a34a;
+    --rep: #374151; --rech: #9333ea; --fixed: #059669;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --panel: #1f1f1d; --text: #ecebe6; --muted: #a09f99; --line: #33332f; --chip: #2a2a27; --accent: #7c9cf5; --rep: #9ca3af; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header { padding: 16px 20px 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 650; }
+  .status { color: var(--muted); font-size: 13px; }
+  .grow { flex: 1; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: default; }
+  nav.tabs { display: flex; gap: 4px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+  nav.tabs a { padding: 8px 14px; text-decoration: none; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  nav.tabs a.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px; align-items: center; }
+  .filters select, .filters input[type=search] { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); }
+  .filters input[type=search] { min-width: 220px; }
+  .filters label.chk { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+  main { padding: 0 20px 40px; }
+  .banner { margin: 12px 20px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); }
+  .banner.err { border-color: var(--bloq); }
+  .banner.warn { border-color: var(--parcial); }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); cursor: pointer; user-select: none; white-space: nowrap; background: var(--panel); position: sticky; top: 0; }
+  tr.row:hover td { background: var(--chip); cursor: pointer; }
+  td.case { font-family: ui-monospace, Consolas, monospace; white-space: nowrap; }
+  td.title { max-width: 560px; }
+  td.list, td.date { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; margin: 1px 2px 1px 0; }
+  .t-BUG { background: var(--bug); } .t-Mejora { background: var(--mejora); } .t-Duda { background: var(--duda); }
+  .t-Bloqueado { background: var(--bloq); } .t-Parcial { background: var(--parcial); } .t-Índice { background: var(--indice); } .t-Otro { background: var(--indice); }
+  .p-P1 { background: var(--p1); } .p-P2 { background: var(--p2); } .p-P3 { background: var(--p3); }
+  .s-Reportado { background: var(--rep); } .s-Rechequear { background: var(--rech); } .s-FIXED { background: var(--fixed); } .s-Sin { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  .count { color: var(--muted); font-size: 13px; padding: 4px 0 10px; }
+  .board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(260px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+  .col { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px; min-height: 120px; }
+  .col h3 { margin: 0 0 8px; font-size: 14px; display: flex; justify-content: space-between; }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-bottom: 8px; cursor: pointer; background: var(--bg); }
+  .card:hover { border-color: var(--accent); }
+  .card .c { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--muted); }
+  .card .n { font-size: 13px; margin: 2px 0 4px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .kpi .v { font-size: 26px; font-weight: 700; }
+  .kpi .l { color: var(--muted); font-size: 13px; }
+  .matrix td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .matrix td.zero { color: var(--line); }
+  .drawer { position: fixed; inset: 0 0 0 auto; width: min(640px, 100%); background: var(--panel); border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(0,0,0,.15); padding: 18px 20px; overflow-y: auto; transform: translateX(100%); transition: transform .18s ease; z-index: 10; }
+  .drawer.open { transform: none; }
+  .drawer h2 { font-size: 16px; margin: 6px 0 10px; }
+  .drawer .desc { white-space: normal; font-size: 13.5px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; word-wrap: break-word; }
+  .drawer .meta { color: var(--muted); font-size: 13px; }
+  .drawer a { color: var(--accent); }
+  .actions { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-top: 10px; }
+  .arow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
+  .alabel { width: 74px; color: var(--muted); font-size: 13px; }
+  .arow button { padding: 4px 10px; font-size: 13px; }
+  .arow button.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .arow select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); max-width: 340px; }
+  .lchk { font-size: 13px; display: flex; gap: 3px; align-items: center; }
+  button.danger { color: var(--bloq); border-color: var(--bloq); }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 20; }
+  .modal.open { display: flex; }
+  .mbox { background: var(--panel); border-radius: 12px; padding: 18px 20px; width: min(460px, 92vw); border: 1px solid var(--line); }
+  .mbox h3 { margin: 0 0 6px; font-size: 16px; }
+  .mbtns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  .warnTxt { color: var(--parcial); }
+  .mbox.wide { width: min(720px, 96vw); max-height: 92vh; overflow-y: auto; }
+  .frow { display: flex; gap: 8px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+  .frow > .fl { width: 90px; color: var(--muted); font-size: 13px; }
+  .frow input[type=text], .frow select { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  .frow input.full, .frow select.full { flex: 1; min-width: 200px; }
+  textarea#ncDesc { width: 100%; min-height: 260px; font: 13px/1.45 ui-monospace, Consolas, monospace; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  .preview { font-size: 13px; color: var(--muted); }
+  .dups { border: 1px solid var(--parcial); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+  .dups a { color: var(--accent); }
+  .meta { color: var(--muted); font-size: 13px; }
+  .empty { color: var(--muted); padding: 30px; text-align: center; }
+  .ctitle { font-size: 14px; margin: 18px 0 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .cmt { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; font-size: 13.5px; background: var(--bg); word-wrap: break-word; }
+  .cmeta { color: var(--muted); font-size: 12.5px; margin-bottom: 4px; }
+  .newcmt { margin-bottom: 12px; }
+  .mwrap { position: relative; }
+  .cmt textarea.cedtxt { width: 100%; min-height: 70px; font: inherit; font-size: 13.5px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); resize: vertical; }
+  .cedit { color: var(--accent); }
+  .mpop { display: none; position: absolute; left: 8px; top: 100%; z-index: 30; min-width: 260px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.18); overflow: hidden; }
+  .mitem { padding: 6px 10px; cursor: pointer; font-size: 13px; }
+  .mitem.on, .mitem:hover { background: var(--chip); }
+  .newcmt textarea { width: 100%; min-height: 70px; font: inherit; font-size: 13.5px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); resize: vertical; }
+  .banner button { margin-left: 8px; }
+  .setup code { background: var(--chip); padding: 1px 5px; border-radius: 4px; }
+  .progress { height: 3px; background: var(--line); margin: 0 20px; border-radius: 2px; overflow: hidden; }
+  .progress > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Longevix QA · Scheduling</h1>
+  <span class="status" id="status">Sin conectar</span>
+  <span class="grow"></span>
+  <label class="status"><input type="checkbox" id="auto" checked> Actualizar cada 2 min</label>
+  <span class="status" id="who"></span>
+  <button id="auth">Conectar Trello</button>
+  <button id="newCard" disabled>➕ Nueva tarjeta</button>
+  <button id="refresh" class="primary" disabled>🔄 Actualizar</button>
+</header>
+<div class="progress"><div id="bar"></div></div>
+<div id="banner"></div>
+<nav class="tabs">
+  <a href="#tabla" data-view="tabla">Tabla</a>
+  <a href="#estado" data-view="estado">Por estado</a>
+  <a href="#listas" data-view="listas">Por lista</a>
+  <a href="#resumen" data-view="resumen">Resumen</a>
+</nav>
+<div class="filters" id="filters">
+  <input type="search" id="q" placeholder="Buscar caso, título o texto…">
+  <select id="fTipo"><option value="">Tipo: todos</option></select>
+  <select id="fPrio"><option value="">Prioridad: todas</option></select>
+  <select id="fEstado"><option value="">Estado: todos</option></select>
+  <select id="fTester"><option value="">Creada por: todos</option></select>
+  <select id="fLista"><option value="">Lista: todas</option></select>
+  <label class="chk"><input type="checkbox" id="hideIdx" checked> Ocultar Pendientes / Resumen</label>
+</div>
+<main id="main"><div class="empty">Cargando tarjetas…</div></main>
+<aside class="drawer" id="drawer"></aside>
+<div class="modal" id="modal"></div>
+
+<script>
+(() => {
+  // Trello API key of the "Longevix QA Board" Power-Up (public by design; NEVER put the Secret here).
+  const TRELLO_KEY = "";
+  const BOARD_ID = "6adf5f90f7a0076b34dde3d8"; // Longevix QA CU Scheduling
+  const API = "https://api.trello.com/1";
+  const TOKEN_KEY = "lgx-trello-token";
+  const AUTO_MS = 2 * 60 * 1000;
+  const TIPOS = ["BUG", "Mejora", "Duda", "Bloqueado", "Parcial", "Índice", "Otro"];
+  const ESTADOS = ["Rechequear", "Reportado", "FIXED", "Sin etiqueta"];
+  const PRIOS = ["P1", "P2", "P3", "—"];
+  const LABELS = {}; // label name -> id, filled from the board's labels
+  const CARD_FIELDS = "name,desc,idList,labels,shortUrl,dateLastActivity,closed";
+  const ACT_FILTER = "createCard,copyCard,convertToCardFromCheckItem,commentCard";
+  const STATE_LABELS = ["FIXED", "Rechequear", "Reportado"];
+  const EDIT_LABELS = ["BUG", "MEJORA", "DUDA", "BLOQUEADO", "PARCIAL", "P1", "P2", "P3"];
+
+  let token = null;
+  let members = [];
+  let openCardId = null;
+  let me = null;
+  let cards = [];
+  let lists = [];
+  let lastLoaded = null;
+  let loading = false;
+  let sort = { key: "list", dir: 1 };
+  let timer = null;
+  const warnings = [];
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // ---------- data helpers ----------
+  // REST card -> the shape classify() expects
+  function mapCard(c) {
+    const l = lists.find((x) => x.id === c.idList);
+    return { id: c.id, name: c.name, desc: c.desc, url: c.shortUrl, closed: c.closed, labels: c.labels || [],
+      list: { id: c.idList, name: l ? l.name : "" }, lastActivityAt: c.dateLastActivity };
+  }
+  function setLabels(labs) {
+    for (const k in LABELS) delete LABELS[k];
+    (labs || []).forEach((l) => { if (!l.name) return; LABELS[l.name] = l.id; if (!LABELS[l.name.toUpperCase()]) LABELS[l.name.toUpperCase()] = l.id; });
+  }
+
+  function listShort(name) {
+    const m = name.match(/\(([A-Z]+)\)\s*$/) || name.match(/^[\dX]+\.?\s*(?:—\s*)?([A-Z]+)\s*—/) || name.match(/^X\s*—/);
+    if (name.includes("(/book)")) {
+      const b = name.match(/^([\dX]+)\.?\s*([A-Z]*)/);
+      return "/book " + (b && b[2] ? b[2] : "X");
+    }
+    return m && m[1] ? m[1] : name;
+  }
+
+  function classify(c) {
+    const labels = (c.labels || []).map((l) => (l.name || "").toUpperCase());
+    const has = (n) => labels.includes(n);
+    const name = c.name || "";
+    let tipo;
+    if (/\]\s*(Pendientes|Resumen)/i.test(name) || /^\[[A-Z]+\]\s*(Pendientes|Resumen)/i.test(name)) tipo = "Índice";
+    else if (has("BLOQUEADO") || /bloqueado/i.test(name)) tipo = "Bloqueado";
+    else if (has("BUG")) tipo = "BUG";
+    else if (has("MEJORA")) tipo = "Mejora";
+    else if (has("DUDA")) tipo = "Duda";
+    else if (has("PARCIAL")) tipo = "Parcial";
+    else if (/\bBUG\b/i.test(name)) tipo = "BUG";
+    else if (/mej[op]ra/i.test(name)) tipo = "Mejora";
+    else if (/duda/i.test(name)) tipo = "Duda";
+    else tipo = "Otro";
+    const extra = [];
+    if (has("DUDA") && tipo !== "Duda") extra.push("Duda");
+    if (has("PARCIAL") && tipo !== "Parcial") extra.push("Parcial");
+    if (has("BLOQUEADO") && tipo !== "Bloqueado") extra.push("Bloqueado");
+    const prio = has("P1") ? "P1" : has("P2") ? "P2" : has("P3") ? "P3" : "—";
+    const estado = has("FIXED") ? "FIXED" : has("RECHEQUEAR") ? "Rechequear" : has("REPORTADO") ? "Reportado" : "Sin etiqueta";
+    const caseM = name.match(/^\[([^\]]+)\]/);
+    const desc = c.desc || "";
+    let tester = "—";
+    if (/vbianchi|valen bianchi|QAFRONTDESK/i.test(desc)) tester = "Valentina";
+    if (/wtoledo/i.test(desc)) tester = "Walter";
+    if (/gbassi/i.test(desc) && !/wtoledo/i.test(desc)) tester = "Gero";
+    const title = name.replace(/^\[[^\]]+\]\s*/, "");
+    return {
+      id: c.id, name, title, desc, url: c.url || c.webUrl,
+      caseId: caseM ? caseM[1] : "—",
+      list: (c.list && c.list.name) || "", listId: (c.list && c.list.id) || "", listShort: listShort((c.list && c.list.name) || ""),
+      labelIds: (c.labels || []).map((l) => l.id),
+      tipo, extra, prio, estado, tester,
+      labels: (c.labels || []).map((l) => l.name),
+      last: c.lastActivityAt ? new Date(c.lastActivityAt) : null,
+    };
+  }
+
+  async function pool(items, n, fn) {
+    const out = new Array(items.length);
+    let i = 0;
+    async function worker() { while (i < items.length) { const k = i++; out[k] = await fn(items[k], k); } }
+    await Promise.all(Array.from({ length: Math.min(n, items.length) }, worker));
+    return out;
+  }
+
+  // ---------- errors ----------
+  function errText(e) {
+    const code = e && e.code;
+    switch (code) {
+      case "unauthorized": return "Trello rechazó el acceso (401). Si tu conexión venció o la revocaste, tocá «Conectar Trello». Si recién te conectaste, revisá que tu usuario sea miembro del tablero.";
+      case "not_found": return "Trello no encontró eso (404). Puede que ya no exista o que tu usuario no sea miembro del tablero.";
+      case "rate_limited": return "Trello está recibiendo demasiados pedidos. Esperá unos segundos y tocá 🔄 Actualizar.";
+      case "network": return "No se pudo conectar con Trello (sin internet o bloqueado por el navegador).";
+      default: return "Trello devolvió un error" + (e && e.status ? " (" + e.status + ")" : "") + ". " + (e && e.message ? e.message : "");
+    }
+  }
+  function showBanner(html, kind) { $("banner").innerHTML = html ? `<div class="banner ${kind || ""}">${html}</div>` : ""; }
+
+  const AUTH_CODES = ["unauthorized"];
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // One call to the Trello REST API. Reads retry on throttling or network errors; writes retry only on 429 (rejected, so safe).
+  async function api(method, path, params) {
+    const url = new URL(API + path);
+    url.searchParams.set("key", TRELLO_KEY);
+    url.searchParams.set("token", token);
+    const opts = { method, cache: "no-store" };
+    if (method === "GET") { for (const k in params || {}) url.searchParams.set(k, params[k]); }
+    else if (params) { opts.body = new URLSearchParams(params); }
+    const waits = [2000, 5000, 12000];
+    for (let attempt = 0; ; attempt++) {
+      let res;
+      try { res = await fetch(url, opts); }
+      catch (err) {
+        if (method !== "GET" || attempt >= waits.length) throw { code: "network", message: String(err && err.message || err) };
+        await sleep(waits[attempt]); continue;
+      }
+      if (res.ok) { const t = await res.text(); try { return t ? JSON.parse(t) : null; } catch (e) { return t; } }
+      const msg = (await res.text().catch(() => "")).slice(0, 200);
+      const retry = res.status === 429 || (method === "GET" && res.status >= 500);
+      if (retry && attempt < waits.length) {
+        const w = waits[attempt] + Math.random() * 1000;
+        $("status").textContent = `Trello está lento, reintentando en ${Math.round(w / 1000)} s…`;
+        await sleep(w); continue;
+      }
+      const code = res.status === 401 || res.status === 403 ? "unauthorized" : res.status === 404 ? "not_found" : res.status === 429 ? "rate_limited" : "http";
+      throw { code, status: res.status, message: msg };
+    }
+  }
+
+  // ---------- load ----------
+  async function load() {
+    if (loading || !token) return;
+    loading = true;
+    $("refresh").disabled = true;
+    $("status").textContent = "Leyendo Trello…";
+    $("bar").style.width = "30%";
+    warnings.length = 0;
+    try {
+      const [ls, labs, cs] = await Promise.all([
+        api("GET", `/boards/${BOARD_ID}/lists`, { filter: "open", fields: "name,pos" }),
+        api("GET", `/boards/${BOARD_ID}/labels`, { fields: "name,color", limit: 1000 }),
+        api("GET", `/boards/${BOARD_ID}/cards`, { filter: "open", fields: CARD_FIELDS }),
+      ]);
+      lists = ls || [];
+      setLabels(labs);
+      cards = keepActivity((cs || []).filter((c) => !c.closed).map(mapCard).map(classify));
+      const order = new Map(lists.map((l, i) => [l.name, i]));
+      cards.forEach((c) => (c.listOrder = order.has(c.list) ? order.get(c.list) : 999));
+      lastLoaded = new Date();
+      showBanner(warnings.length ? warnings.map(esc).join("<br>") : "", "warn");
+      $("newCard").disabled = !lists.length;
+      setTimeout(loadAllActivity, 0);
+      if (!members.length) loadMembers();
+      fillFilters();
+      render();
+    } catch (e) {
+      showBanner(esc(errText(e)), "err");
+      if (e && e.code === "unauthorized") authFailed();
+    } finally {
+      loading = false;
+      $("refresh").disabled = !token;
+      $("bar").style.width = "0";
+      updateStatus();
+    }
+  }
+
+  function updateStatus() {
+    $("status").textContent = lastLoaded
+      ? `${cards.length} tarjetas · actualizado ${lastLoaded.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`
+      : "Sin datos todavía";
+  }
+
+  function schedule() {
+    clearInterval(timer);
+    if ($("auto").checked) timer = setInterval(() => { if (!document.hidden) load(true); }, AUTO_MS);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && $("auto").checked && lastLoaded && Date.now() - lastLoaded > AUTO_MS) load(true);
+  });
+
+  // ---------- filters ----------
+  function fillSelect(id, label, values, current) {
+    const s = $(id);
+    s.innerHTML = `<option value="">${label}</option>` + values.map((v) => `<option ${v === current ? "selected" : ""}>${esc(v)}</option>`).join("");
+  }
+  function fillFilters() {
+    const cur = (id) => $(id).value;
+    fillSelect("fTipo", "Tipo: todos", TIPOS.filter((t) => cards.some((c) => c.tipo === t)), cur("fTipo"));
+    fillSelect("fPrio", "Prioridad: todas", PRIOS, cur("fPrio"));
+    fillSelect("fEstado", "Estado: todos", ESTADOS, cur("fEstado"));
+    fillSelect("fTester", "Creada por: todos", [...new Set(cards.map(who))].sort(), cur("fTester"));
+    fillSelect("fLista", "Lista: todas", lists.map((l) => l.name), cur("fLista"));
+    try {
+      const saved = JSON.parse(localStorage.getItem("lgx-filters") || "{}");
+      if (!fillFilters.restored) { fillFilters.restored = true; for (const k in saved) if ($(k)) { if ($(k).type === "checkbox") $(k).checked = saved[k]; else $(k).value = saved[k]; } }
+    } catch (e) {}
+  }
+  function saveFilters() {
+    try {
+      const o = {}; ["q", "fTipo", "fPrio", "fEstado", "fTester", "fLista", "hideIdx"].forEach((k) => (o[k] = $(k).type === "checkbox" ? $(k).checked : $(k).value));
+      localStorage.setItem("lgx-filters", JSON.stringify(o));
+    } catch (e) {}
+  }
+  function filtered() {
+    const q = $("q").value.trim().toLowerCase();
+    const f = { tipo: $("fTipo").value, prio: $("fPrio").value, estado: $("fEstado").value, tester: $("fTester").value, list: $("fLista").value };
+    const hide = $("hideIdx").checked;
+    return cards.filter((c) =>
+      (!hide || c.tipo !== "Índice") &&
+      (!f.tipo || c.tipo === f.tipo || c.extra.includes(f.tipo)) &&
+      (!f.prio || c.prio === f.prio) &&
+      (!f.estado || c.estado === f.estado) &&
+      (!f.tester || who(c) === f.tester) &&
+      (!f.list || c.list === f.list) &&
+      (!q || (c.name + " " + c.desc).toLowerCase().includes(q)));
+  }
+
+  // ---------- render ----------
+  function who(c) { return c.creator ? c.creator : c.tester !== "—" ? c.tester + " (est.)" : "—"; }
+  const tagTipo = (c) => `<span class="tag t-${esc(c.tipo)}">${esc(c.tipo)}</span>` + c.extra.map((x) => `<span class="tag t-${esc(x)}">${esc(x)}</span>`).join("");
+  const tagPrio = (c) => c.prio === "—" ? "" : `<span class="tag p-${c.prio}">${c.prio}</span>`;
+  const tagEstado = (c) => `<span class="tag s-${c.estado === "Sin etiqueta" ? "Sin" : c.estado}">${esc(c.estado)}</span>`;
+  const fmtDate = (d) => d ? d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) : "";
+
+  function currentView() { const h = location.hash.replace("#", ""); return ["tabla", "estado", "listas", "resumen"].includes(h) ? h : "tabla"; }
+
+  function render() {
+    const v = currentView();
+    document.querySelectorAll("nav.tabs a").forEach((a) => a.classList.toggle("active", a.dataset.view === v));
+    $("filters").style.display = v === "resumen" ? "none" : "";
+    if (!lastLoaded) return;
+    const rows = filtered();
+    if (v === "tabla") renderTable(rows);
+    else if (v === "estado") renderBoard(rows);
+    else if (v === "listas") renderMatrix(rows);
+    else renderSummary();
+  }
+
+  function renderTable(rows) {
+    const key = sort.key, dir = sort.dir;
+    const prioRank = { P1: 1, P2: 2, P3: 3, "—": 4 };
+    const val = (c) => key === "who" ? who(c).toLowerCase() : key === "ncom" ? -(c.comments ? c.comments.length : 0) : key === "prio" ? prioRank[c.prio] : key === "list" ? c.listOrder : key === "last" ? (c.last ? -c.last : 0) : String(c[key] || "").toLowerCase();
+    rows = rows.slice().sort((a, b) => (val(a) > val(b) ? 1 : val(a) < val(b) ? -1 : 0) * dir);
+    const th = (k, l) => `<th data-sort="${k}">${l}${sort.key === k ? (sort.dir > 0 ? " ▲" : " ▼") : ""}</th>`;
+    $("main").innerHTML = `<div class="count">${rows.length} tarjetas</div>` + (rows.length ? `<table><thead><tr>
+      ${th("caseId", "Caso")}${th("title", "Título")}${th("tipo", "Tipo")}${th("prio", "Prio")}${th("estado", "Estado")}${th("who", "Creada por")}${th("ncom", "💬")}${th("list", "Lista")}${th("last", "Actividad")}
+      </tr></thead><tbody>` + rows.map((c) => `<tr class="row" data-id="${esc(c.id)}">
+        <td class="case">${esc(c.caseId)}</td><td class="title">${esc(c.title)}</td><td>${tagTipo(c)}</td><td>${tagPrio(c)}</td>
+        <td>${tagEstado(c)}</td><td>${esc(who(c))}</td><td class="date">${c.comments ? (c.comments.length || "") : "…"}</td><td class="list">${esc(c.listShort)}</td><td class="date">${fmtDate(c.last)}</td></tr>`).join("") +
+      `</tbody></table><p class="status">"Creada por" sale del historial de Trello. Si dice "(est.)", todavía no se cargó y es una estimación según la cuenta usada en la descripción.</p>` : `<div class="empty">Ninguna tarjeta con estos filtros.</div>`);
+  }
+
+  function renderBoard(rows) {
+    const cols = [
+      ["Rechequear", (c) => c.estado === "Rechequear"],
+      ["FIXED", (c) => c.estado === "FIXED"],
+      ["BUG reportado", (c) => c.estado === "Reportado" && c.tipo === "BUG"],
+      ["BUG sin reportar", (c) => c.estado === "Sin etiqueta" && c.tipo === "BUG"],
+      ["Bloqueado", (c) => c.estado !== "Rechequear" && c.estado !== "FIXED" && (c.tipo === "Bloqueado" || c.extra.includes("Bloqueado"))],
+      ["Duda", (c) => c.estado !== "Rechequear" && c.estado !== "FIXED" && c.tipo === "Duda"],
+      ["Parcial", (c) => c.estado !== "Rechequear" && c.estado !== "FIXED" && c.tipo === "Parcial"],
+      ["Mejora", (c) => c.estado !== "Rechequear" && c.estado !== "FIXED" && c.tipo === "Mejora"],
+      ["Pendientes / Resumen", (c) => c.tipo === "Índice"],
+    ];
+    $("main").innerHTML = `<div class="board">` + cols.map(([t, f]) => {
+      const cs = rows.filter(f);
+      if (t === "Pendientes / Resumen" && $("hideIdx").checked) return "";
+      return `<div class="col"><h3><span>${esc(t)}</span><span class="status">${cs.length}</span></h3>` +
+        cs.map((c) => `<div class="card" data-id="${esc(c.id)}"><div class="c">${esc(c.caseId)} · ${esc(c.listShort)}</div>
+          <div class="n">${esc(c.title)}</div>${tagPrio(c)}${who(c) !== "—" ? `<span class="status"> ${esc(who(c))}</span>` : ""}${c.comments && c.comments.length ? `<span class="status"> · 💬 ${c.comments.length}</span>` : ""}</div>`).join("") + `</div>`;
+    }).join("") + `</div>`;
+  }
+
+  function renderMatrix(rows) {
+    const types = ["BUG", "Mejora", "Duda", "Bloqueado", "Parcial", "Índice", "Otro"];
+    const byList = lists.map((l) => {
+      const cs = rows.filter((c) => c.list === l.name);
+      return { l, cs, n: types.map((t) => cs.filter((c) => c.tipo === t).length), rech: cs.filter((c) => c.estado === "Rechequear").length, p1: cs.filter((c) => c.prio === "P1").length };
+    }).filter((x) => x.cs.length);
+    const cell = (n) => `<td class="num ${n ? "" : "zero"}">${n || "·"}</td>`;
+    $("main").innerHTML = byList.length ? `<table class="matrix"><thead><tr><th>Lista</th>${types.map((t) => `<th>${t}</th>`).join("")}<th>P1</th><th>Rechequear</th><th>Total</th></tr></thead><tbody>` +
+      byList.map((x) => `<tr class="row" data-list="${esc(x.l.name)}"><td>${esc(x.l.name)}</td>${x.n.map(cell).join("")}${cell(x.p1)}${cell(x.rech)}${cell(x.cs.length)}</tr>`).join("") +
+      `</tbody></table><p class="status">Tocá una fila para ver sus tarjetas en la tabla.</p>` : `<div class="empty">Ninguna tarjeta con estos filtros.</div>`;
+  }
+
+  function renderSummary() {
+    const open = cards.filter((c) => c.tipo !== "Índice");
+    const k = (l, v) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+    const n = (f) => open.filter(f).length;
+    $("main").innerHTML = `<div class="kpis">` +
+      k("Tarjetas (sin índices)", open.length) +
+      k("BUG P1", n((c) => c.tipo === "BUG" && c.prio === "P1")) +
+      k("BUG P2", n((c) => c.tipo === "BUG" && c.prio === "P2")) +
+      k("BUG P3", n((c) => c.tipo === "BUG" && c.prio === "P3")) +
+      k("Para rechequear", n((c) => c.estado === "Rechequear")) +
+      k("FIXED abiertas", n((c) => c.estado === "FIXED")) +
+      k("Bloqueados", n((c) => c.tipo === "Bloqueado" || c.extra.includes("Bloqueado"))) +
+      k("Dudas", n((c) => c.tipo === "Duda" || c.extra.includes("Duda"))) +
+      k("Mejoras", n((c) => c.tipo === "Mejora")) +
+      k("Pendientes / Resumen", cards.length - open.length) +
+      `</div><h3>Por quién la creó</h3><table class="matrix"><thead><tr><th>Creada por</th><th>BUG</th><th>Duda</th><th>Mejora</th><th>Bloqueado</th><th>Rechequear</th></tr></thead><tbody>` +
+      [...new Set(open.map(who))].sort().map((t) => {
+        const cs = open.filter((c) => who(c) === t);
+        const c2 = (f) => `<td class="num">${cs.filter(f).length}</td>`;
+        return `<tr><td>${t}</td>${c2((c) => c.tipo === "BUG")}${c2((c) => c.tipo === "Duda")}${c2((c) => c.tipo === "Mejora")}${c2((c) => c.tipo === "Bloqueado")}${c2((c) => c.estado === "Rechequear")}</tr>`;
+      }).join("") + `</tbody></table>`;
+  }
+
+  // ---------- drawer ----------
+  function mdLite(s) {
+    let h = esc(s);
+    h = h.replace(/!\[([^\]]*)\]\((https?:[^)\s]+)\)/g, (m, alt, u) => `<a href="${u}" target="_blank" rel="noopener">[imagen adjunta]</a>`);
+    h = h.replace(/\[([^\]]+)\]\((https?:[^)\s"]+)(?:\s+&quot;[^)]*&quot;)?\)/g, (m, t, u) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`);
+    h = h.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (m, p, u) => `${p}<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+    h = h.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+    return h.replace(/\n/g, "<br>");
+  }
+  function openCard(id) {
+    const c = cards.find((x) => x.id === id);
+    if (!c) return;
+    $("drawer").innerHTML = `<button id="close">✕ Cerrar</button>
+      <h2>${esc(c.name)}</h2>
+      <div>${tagTipo(c)}${tagPrio(c)}${tagEstado(c)}</div>
+      <p class="meta">${esc(c.list)} · ${c.creator ? `creada por <b>${esc(c.creator)}</b> el ${c.created.toLocaleString("es-AR")}` : `creada por: ${esc(who(c))}`} · última actividad ${c.last ? c.last.toLocaleString("es-AR") : "—"}</p>
+      <p><a href="${esc(c.url)}" target="_blank" rel="noopener">Abrir en Trello ↗</a></p>
+      <div class="actions">
+        <div class="arow"><span class="alabel">Estado</span>
+          ${STATE_LABELS.map((s) => `<button data-act="state" data-v="${s}" class="${c.estado === s ? "on" : ""}">${s}</button>`).join("")}
+          <button data-act="state" data-v="">Sin estado</button></div>
+        <div class="arow"><span class="alabel">Etiquetas</span>
+          ${EDIT_LABELS.map((l) => `<label class="lchk"><input type="checkbox" data-lab="${l}" ${c.labelIds.includes(LABELS[l]) ? "checked" : ""}> ${l}</label>`).join("")}
+          <button data-act="labels">Aplicar etiquetas</button></div>
+        <div class="arow"><span class="alabel">Mover a</span>
+          <select id="moveTo">${lists.map((l) => `<option value="${esc(l.id)}" ${l.id === c.listId ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select>
+          <button data-act="move">Mover</button></div>
+        <div class="arow"><span class="alabel">Archivar</span><button data-act="archive" class="danger">Archivar tarjeta</button></div>
+        <div id="actMsg" class="status"></div>
+      </div>
+      <div class="desc">${mdLite(c.desc) || "<i>Sin descripción</i>"}</div>
+      <h3 class="ctitle">💬 Comentarios</h3>
+      <div class="newcmt"><div class="mwrap"><textarea id="cmtText" placeholder="Escribí un comentario… (escribí @ para mencionar)"></textarea></div>
+        <div class="mbtns" style="margin-top:6px"><span id="cmtMsg" class="status" style="flex:1"></span><button id="cmtSend" class="primary">Comentar</button></div></div>
+      <div id="comments">${renderComments(c)}</div>`;
+    $("drawer").classList.add("open");
+    $("close").onclick = () => $("drawer").classList.remove("open");
+    $("drawer").querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => planAction(c, b.dataset.act, b.dataset.v)));
+    openCardId = c.id;
+    attachMentions($("cmtText"));
+    wireComments(c);
+    $("cmtSend").onclick = () => {
+      const text = $("cmtText").value.trim();
+      if (!text) { $("cmtMsg").textContent = "Escribí el comentario."; return; }
+      confirmBox(`<h3>Comentar en la tarjeta</h3><p class="meta">${esc(c.caseId)} · ${esc(c.title)}</p><div class="cmt">${mdLite(text)}</div><p class="meta">Se publica en Trello con tu nombre y lo ven todos los del tablero. Las menciones (@usuario) le llegan como notificación.</p>`,
+        () => postComment(c, text));
+    };
+    fetchActivity(c, true).then(() => {
+      if (!$("drawer").classList.contains("open") || !$("comments")) return;
+      $("comments").innerHTML = renderComments(c); wireComments(c);
+      const meta = $("drawer").querySelector("p.meta");
+      if (meta && c.creator) meta.innerHTML = `${esc(c.list)} · creada por <b>${esc(c.creator)}</b> el ${c.created.toLocaleString("es-AR")} · última actividad ${c.last ? c.last.toLocaleString("es-AR") : "—"}`;
+    }).catch((e) => { if ($("comments")) $("comments").innerHTML = `<p class="meta">No se pudieron leer los comentarios: ${esc(errText(e))}</p>`; });
+  }
+
+  async function postComment(c, text) {
+    const btn = $("cmtSend");
+    btn.disabled = true;
+    $("cmtMsg").textContent = "Publicando…";
+    try {
+      await api("POST", `/cards/${c.id}/actions/comments`, { text });
+    } catch (e) {
+      $("cmtMsg").textContent = writeErr(e);
+      btn.disabled = false;
+      return;
+    }
+    $("cmtText").value = "";
+    $("cmtMsg").textContent = "✔ Comentario publicado.";
+    btn.disabled = false;
+    try { await fetchActivity(c, true); } catch (e) {}
+    if ($("comments")) { $("comments").innerHTML = renderComments(c); wireComments(c); }
+    render();
+  }
+
+  function renderComments(c) {
+    if (!c.comments) return `<p class="meta">Cargando comentarios…</p>`;
+    if (!c.comments.length) return `<p class="meta">Sin comentarios.</p>`;
+    return c.comments.map((m, i) => `<div class="cmt" data-ci="${i}"><div class="cmeta"><b>${esc(m.author)}</b> · ${m.date.toLocaleString("es-AR")}${m.edited ? " (editado)" : ""}${me && m.authorId === me.id && m.id ? ` · <a href="#" class="cedit" data-ci="${i}">Editar</a> · <a href="#" class="cdel" data-ci="${i}">Borrar</a>` : ""}</div><div class="cbody">${mdLite(m.text)}</div></div>`).join("");
+  }
+
+  function wireComments(c) {
+    const box = $("comments");
+    if (!box || !c.comments) return;
+    box.querySelectorAll("a.cdel").forEach((a) => (a.onclick = (ev) => {
+      ev.preventDefault();
+      const m = c.comments[+a.dataset.ci];
+      confirmBox(`<h3>Borrar tu comentario</h3><p class="meta">${esc(c.caseId)} · ${esc(c.title)}</p><div class="cmt">${mdLite(m.text)}</div><p class="warnTxt">Se borra de Trello para todos y no se puede recuperar.</p>`,
+        async () => {
+          const meta = box.querySelector(`.cmt[data-ci="${a.dataset.ci}"] .cmeta`);
+          if (meta) meta.insertAdjacentHTML("beforeend", " · Borrando…");
+          try { await api("DELETE", `/actions/${m.id}`); }
+          catch (e) { if (meta) meta.insertAdjacentHTML("beforeend", " " + esc(writeErr(e))); return; }
+          try { await fetchActivity(c, true); } catch (e) { c.comments = c.comments.filter((x) => x.id !== m.id); }
+          box.innerHTML = renderComments(c); wireComments(c);
+          render();
+        });
+    }));
+    box.querySelectorAll("a.cedit").forEach((a) => (a.onclick = (ev) => {
+      ev.preventDefault();
+      const m = c.comments[+a.dataset.ci];
+      const div = box.querySelector(`.cmt[data-ci="${a.dataset.ci}"] .cbody`);
+      div.innerHTML = `<div class="mwrap"><textarea class="cedtxt">${esc(m.text)}</textarea></div>
+        <div class="mbtns" style="margin-top:6px"><span class="status cedmsg" style="flex:1"></span><button class="cedno">Cancelar</button><button class="cedok primary">Guardar</button></div>`;
+      const ta = div.querySelector("textarea");
+      attachMentions(ta);
+      ta.focus();
+      div.querySelector(".cedno").onclick = () => { box.innerHTML = renderComments(c); wireComments(c); };
+      div.querySelector(".cedok").onclick = () => {
+        const text = ta.value.trim();
+        if (!text) { div.querySelector(".cedmsg").textContent = "El comentario no puede quedar vacío."; return; }
+        if (text === m.text) { div.querySelector(".cedmsg").textContent = "No hay cambios."; return; }
+        confirmBox(`<h3>Editar tu comentario</h3><p class="meta">${esc(c.caseId)} · ${esc(c.title)}</p><div class="cmt">${mdLite(text)}</div><p class="meta">Reemplaza el texto en Trello y queda marcado como editado.</p>`,
+          async () => {
+            const msg = div.querySelector(".cedmsg");
+            msg.textContent = "Guardando…";
+            try {
+              await api("PUT", `/actions/${m.id}`, { text });
+            } catch (e) { msg.textContent = writeErr(e); return; }
+            try { await fetchActivity(c, true); } catch (e) {}
+            box.innerHTML = renderComments(c); wireComments(c);
+          });
+      };
+    }));
+  }
+
+  // ---------- members + @mention autocomplete ----------
+  async function loadMembers() {
+    try {
+      const [mp, mine] = await Promise.all([
+        api("GET", `/boards/${BOARD_ID}/members`, { fields: "fullName,username" }),
+        api("GET", "/members/me", { fields: "fullName,username" }),
+      ]);
+      members = mp || [];
+      me = mine;
+      $("who").textContent = me ? me.fullName : "";
+      if ($("drawer").classList.contains("open") && $("comments") && openCardId) {
+        const c = cards.find((x) => x.id === openCardId);
+        if (c) { $("comments").innerHTML = renderComments(c); wireComments(c); }
+      }
+    } catch (e) { /* without members: no autocomplete and no edit links */ }
+  }
+  const norm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  function attachMentions(ta) {
+    const pop = document.createElement("div");
+    pop.className = "mpop";
+    ta.parentNode.appendChild(pop);
+    let items = [], sel = 0, start = -1;
+    const close = () => { pop.style.display = "none"; items = []; start = -1; };
+    const show = () => {
+      if (!items.length) return close();
+      pop.innerHTML = items.map((m, i) => `<div class="mitem ${i === sel ? "on" : ""}" data-i="${i}"><b>${esc(m.fullName)}</b> <span class="meta">@${esc(m.username)}</span></div>`).join("");
+      pop.style.display = "block";
+      pop.querySelectorAll(".mitem").forEach((d) => (d.onmousedown = (ev) => { ev.preventDefault(); pick(+d.dataset.i); }));
+    };
+    const pick = (i) => {
+      const m = items[i]; if (!m) return;
+      const pos = ta.selectionStart;
+      ta.value = ta.value.slice(0, start) + "@" + m.username + " " + ta.value.slice(pos);
+      const np = start + m.username.length + 2;
+      ta.setSelectionRange(np, np);
+      close(); ta.focus();
+    };
+    ta.addEventListener("input", () => {
+      const pos = ta.selectionStart;
+      const before = ta.value.slice(0, pos);
+      const mm = before.match(/(^|\s)@([\w.\-À-ſ]*)$/);
+      if (!mm || !members.length) return close();
+      start = pos - mm[2].length - 1;
+      const q = norm(mm[2]);
+      items = members.filter((m) => !q || norm(m.username).includes(q) || norm(m.fullName).split(/\s+/).some((w) => w.startsWith(q))).slice(0, 6);
+      sel = 0; show();
+    });
+    ta.addEventListener("keydown", (ev) => {
+      if (pop.style.display !== "block") return;
+      if (ev.key === "ArrowDown") { ev.preventDefault(); sel = (sel + 1) % items.length; show(); }
+      else if (ev.key === "ArrowUp") { ev.preventDefault(); sel = (sel - 1 + items.length) % items.length; show(); }
+      else if (ev.key === "Enter" || ev.key === "Tab") { ev.preventDefault(); pick(sel); }
+      else if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); close(); }
+    });
+    ta.addEventListener("blur", () => setTimeout(close, 150));
+  }
+
+  // ---------- write actions ----------
+  function planAction(c, act, v) {
+    const ops = [];
+    let what = "";
+    if (act === "state") {
+      if (v) ops.push({ action: "attach_label", labelId: LABELS[v], label: v });
+      STATE_LABELS.filter((s) => s !== v && c.labelIds.includes(LABELS[s])).forEach((s) => ops.push({ action: "detach_label", labelId: LABELS[s], label: s }));
+      if (v && c.labelIds.includes(LABELS[v])) ops.shift();
+      what = v ? `Poner el estado <b>${v}</b>` : "Quitar la etiqueta de estado";
+    } else if (act === "labels") {
+      $("drawer").querySelectorAll("[data-lab]").forEach((cb) => {
+        const l = cb.dataset.lab, had = c.labelIds.includes(LABELS[l]);
+        if (cb.checked && !had) ops.push({ action: "attach_label", labelId: LABELS[l], label: l });
+        if (!cb.checked && had) ops.push({ action: "detach_label", labelId: LABELS[l], label: l });
+      });
+      what = "Cambiar etiquetas";
+    } else if (act === "move") {
+      const to = $("moveTo").value;
+      if (to === c.listId) { $("actMsg").textContent = "La tarjeta ya está en esa lista."; return; }
+      ops.push({ action: "move", listId: to, label: (lists.find((l) => l.id === to) || {}).name });
+      what = "Mover la tarjeta";
+    } else if (act === "archive") {
+      ops.push({ action: "archive", label: "archivar" });
+      what = "<b>Archivar</b> la tarjeta (se puede desarchivar desde Trello › Menú › Archivados)";
+    }
+    if (!ops.length) { $("actMsg").textContent = "No hay cambios para aplicar."; return; }
+    const detail = ops.map((o) => o.action === "attach_label" ? `+ agregar ${o.label}` : o.action === "detach_label" ? `− quitar ${o.label}` : o.action === "move" ? `→ ${esc(o.label)}` : "archivar").join("<br>");
+    const owner = c.creator && me && c.creator === me.fullName ? "" : c.creator ? `<p class="warnTxt">Esta tarjeta la creó <b>${esc(c.creator)}</b>. Si no sos vos, hacelo solo con su OK.</p>` : (c.tester !== "—" ? `<p class="warnTxt">⚠ Esta tarjeta parece ser de <b>${esc(c.tester)}</b>. Hacelo solo si tenés su OK.</p>` : "");
+    confirmBox(`<h3>${what}</h3><p class="meta">${esc(c.caseId)} · ${esc(c.title)}</p><p>${detail}</p>${owner}<p class="meta">Se cambia en Trello de verdad y lo ven todos los del tablero.</p>`,
+      () => runOps(c, ops));
+  }
+
+  function confirmBox(html, onOk) {
+    const m = $("modal");
+    m.innerHTML = `<div class="mbox">${html}<div class="mbtns"><button id="mNo">Cancelar</button><button id="mYes" class="primary">Confirmar</button></div></div>`;
+    m.classList.add("open");
+    $("mNo").onclick = () => m.classList.remove("open");
+    $("mYes").onclick = () => { m.classList.remove("open"); onOk(); };
+  }
+
+  function writeErr(e) {
+    if (e && e.code === "network") return "No se sabe si el cambio se aplicó (no hubo respuesta de Trello). Tocá 🔄 Actualizar para ver el estado real antes de reintentar.";
+    return errText(e);
+  }
+
+  async function runOps(c, ops) {
+    const msg = $("actMsg");
+    $("drawer").querySelectorAll("button[data-act]").forEach((b) => (b.disabled = true));
+    msg.textContent = "Guardando en Trello…";
+    let done = 0;
+    try {
+      for (const o of ops) {
+        if (!o.labelId && (o.action === "attach_label" || o.action === "detach_label")) throw { code: "http", message: `La etiqueta ${o.label} no existe en el tablero.` };
+        if (o.action === "attach_label") await api("POST", `/cards/${c.id}/idLabels`, { value: o.labelId });
+        else if (o.action === "detach_label") await api("DELETE", `/cards/${c.id}/idLabels/${o.labelId}`);
+        else if (o.action === "move") await api("PUT", `/cards/${c.id}`, { idList: o.listId, pos: "top" });
+        else if (o.action === "archive") await api("PUT", `/cards/${c.id}`, { closed: "true" });
+        done++;
+      }
+      msg.textContent = "✔ Guardado en Trello.";
+      const touched = new Set([c.listId]);
+      ops.forEach((o) => o.listId && touched.add(o.listId));
+      await reloadLists([...touched]);
+      if (ops.some((o) => o.action === "archive")) $("drawer").classList.remove("open");
+      else openCard(c.id);
+    } catch (e) {
+      msg.innerHTML = (done ? `Se aplicaron ${done} de ${ops.length} cambios. ` : "") + esc(writeErr(e));
+      $("drawer").querySelectorAll("button[data-act]").forEach((b) => (b.disabled = false));
+    }
+  }
+
+  // ---------- new card ----------
+  const TEMPLATES = {
+    BUG: (p, caso) => `**BUG - ${p}**\n\n**Resumen:** \n\n**Caso de prueba:** ${caso}\n\n**URL:** \n\n**Versión:** APP v · API v\n\n**Entorno:** QA · Chrome · Windows · \n\n**Pasos:**\n\n1. \n2. \n\n**Resultado esperado:** \n\n**Resultado obtenido:**\n\n- \n\n**Impacto:** \n\n**Evidencia (adjuntar):**\n\n- \n\n**Relacionadas:** `,
+    Duda: (p, caso) => `**Duda - ${p}**\n\n**Resumen:** \n\n**Caso de prueba:** ${caso}\n\n**URL:** \n\n**Versión:** APP v · API v\n\n**Entorno:** QA · Chrome · Windows · \n\n**Pasos:**\n\n1. \n2. \n\n**Qué pasa:**\n\n- \n\n**Pregunta:** ¿Es correcto que …, o debería …? \n\n**Evidencia (adjuntar):**\n\n- \n\n**Relacionadas:** `,
+    Mejora: (p, caso) => `**Mejora - ${p}**\n\n**Resumen:** \n\n**Caso de prueba:** ${caso}\n\n**URL:** \n\n**Versión:** APP v · API v\n\n**Entorno:** QA · Chrome · Windows · \n\n**Pasos:**\n\n1. \n2. \n\n**Resultado esperado:** \n\n**Mejora propuesta:** \n\n**Evidencia (adjuntar):**\n\n- \n\n**Relacionadas:** `,
+    Bloqueado: (p, caso) => `**Caso(s):** ${caso}\n\n**Estado:** Bloqueado\n\n**Motivo:** \n\n**Qué se necesita:**\n\n- \n\n**Quién lo puede resolver:** `,
+  };
+  const TYPE_LABEL = { BUG: "BUG", Duda: "DUDA", Mejora: "MEJORA", Bloqueado: "BLOQUEADO" };
+
+  function guessList(caso) {
+    const code = (caso.match(/^[A-Z]+/) || [""])[0];
+    if (!code) return "";
+    const book = lists.find((l) => l.name.includes("(/book)") && new RegExp("^[\\dX]+\\.?\\s*" + code + "\\b").test(l.name));
+    const sched = lists.find((l) => l.name.endsWith("(" + code + ")"));
+    return (book || sched || {}).id || "";
+  }
+
+  function buildTitle(caso, tipo, txt) {
+    caso = caso.trim(); txt = txt.trim();
+    return `${caso ? "[" + caso + "] " : ""}${tipo}: ${txt}`;
+  }
+
+  function findDups(caso, txt) {
+    const words = (s) => new Set(s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").split(/[^a-z0-9]+/).filter((w) => w.length > 3));
+    const tw = words(txt);
+    return cards.filter((c) => c.tipo !== "Índice").map((c) => {
+      let score = 0;
+      if (caso && c.caseId.toUpperCase() === caso.trim().toUpperCase()) score += 3;
+      if (tw.size) { const cw = words(c.title); let n = 0; tw.forEach((w) => cw.has(w) && n++); score += n >= 3 ? n : 0; }
+      return { c, score };
+    }).filter((x) => x.score >= 3).sort((a, b) => b.score - a.score).slice(0, 5).map((x) => x.c);
+  }
+
+  function openNewCard() {
+    const m = $("modal");
+    m.innerHTML = `<div class="mbox wide">
+      <h3>➕ Nueva tarjeta</h3>
+      <div class="frow"><span class="fl">Caso</span><input type="text" id="ncCase" placeholder="PAY-12" style="width:130px">
+        <span class="fl" style="width:auto">Tipo</span>
+        ${["BUG", "Duda", "Mejora", "Bloqueado"].map((t, i) => `<label class="lchk"><input type="radio" name="ncTipo" value="${t}" ${i === 0 ? "checked" : ""}> ${t}</label>`).join("")}
+        <span class="fl" style="width:auto">Prio</span>
+        ${["P1", "P2", "P3"].map((p) => `<label class="lchk"><input type="radio" name="ncPrio" value="${p}" ${p === "P2" ? "checked" : ""}> ${p}</label>`).join("")}</div>
+      <div class="frow"><span class="fl">Lista</span><select id="ncList" class="full"><option value="">— elegí la lista —</option>${lists.map((l) => `<option value="${esc(l.id)}">${esc(l.name)}</option>`).join("")}</select></div>
+      <div class="frow"><span class="fl">Título</span><input type="text" id="ncTitle" class="full" placeholder='qué se ve, pero qué pasa en realidad (ej: el contador dice "Holding…", pero…)'></div>
+      <div class="preview" id="ncPrev"></div>
+      <div id="ncDups"></div>
+      <div class="frow"><span class="fl">Descripción</span><span class="preview">Plantilla según el tipo. Completá los campos; borrá los que no apliquen.</span></div>
+      <textarea id="ncDesc"></textarea>
+      <p class="meta">Las capturas no se pueden subir desde acá: arrastralas a la tarjeta en Trello después de crearla.</p>
+      <div id="ncMsg" class="status"></div>
+      <div class="mbtns"><button id="ncCancel">Cancelar</button><button id="ncCreate" class="primary">Revisar y crear</button></div>
+    </div>`;
+    m.classList.add("open");
+    let touched = false;
+    const tipo = () => m.querySelector("input[name=ncTipo]:checked").value;
+    const prio = () => m.querySelector("input[name=ncPrio]:checked").value;
+    const refreshTpl = () => { if (!touched) $("ncDesc").value = TEMPLATES[tipo()](prio(), $("ncCase").value.trim() || "—"); };
+    const refreshPrev = () => {
+      $("ncPrev").textContent = $("ncTitle").value.trim() ? "Título final: " + buildTitle($("ncCase").value, tipo(), $("ncTitle").value) : "";
+      const d = findDups($("ncCase").value, $("ncTitle").value);
+      $("ncDups").innerHTML = d.length ? `<div class="dups">⚠ Posibles duplicados (revisalos antes de crear):<br>${d.map((c) => `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}</a>`).join("<br>")}</div>` : "";
+    };
+    refreshTpl();
+    $("ncDesc").addEventListener("input", () => (touched = true));
+    m.querySelectorAll("input[name=ncTipo], input[name=ncPrio]").forEach((r) => r.addEventListener("change", () => { refreshTpl(); refreshPrev(); }));
+    $("ncCase").addEventListener("input", () => { if (!$("ncList").value || $("ncList").dataset.auto) { const g = guessList($("ncCase").value.trim().toUpperCase()); if (g) { $("ncList").value = g; $("ncList").dataset.auto = "1"; } } refreshTpl(); refreshPrev(); });
+    $("ncList").addEventListener("change", () => delete $("ncList").dataset.auto);
+    $("ncTitle").addEventListener("input", refreshPrev);
+    $("ncCancel").onclick = () => m.classList.remove("open");
+    $("ncCreate").onclick = () => {
+      const listId = $("ncList").value, title = $("ncTitle").value.trim();
+      if (!listId) { $("ncMsg").textContent = "Elegí la lista."; return; }
+      if (!title) { $("ncMsg").textContent = "Escribí el título."; return; }
+      const data = { listId, listName: (lists.find((l) => l.id === listId) || {}).name, name: buildTitle($("ncCase").value, tipo(), title), desc: $("ncDesc").value, tipo: tipo(), prio: prio(), caso: $("ncCase").value.trim() };
+      const btn = $("ncCreate");
+      if (btn.dataset.confirm !== "1") {
+        btn.dataset.confirm = "1";
+        btn.textContent = "Confirmar: crear en Trello";
+        $("ncMsg").innerHTML = `Se va a crear <b>${esc(data.name)}</b> en <b>${esc(data.listName)}</b> con las etiquetas ${TYPE_LABEL[data.tipo]} y ${data.prio}. Lo ven todos los del tablero.`;
+        return;
+      }
+      createCard(data);
+    };
+  }
+
+  async function createCard(d) {
+    const btn = $("ncCreate");
+    btn.disabled = true; $("ncCancel").disabled = true;
+    $("ncMsg").textContent = "Creando en Trello…";
+    let card;
+    try {
+      const idLabels = [LABELS[TYPE_LABEL[d.tipo]], LABELS[d.prio]].filter(Boolean).join(",");
+      card = await api("POST", "/cards", { idList: d.listId, name: d.name, desc: d.desc, pos: "top", idLabels });
+    } catch (e) {
+      $("ncMsg").textContent = writeErr(e);
+      btn.disabled = false; $("ncCancel").disabled = false;
+      return;
+    }
+    await reloadLists([d.listId]);
+    $("modal").classList.remove("open");
+    openCard(card.id);
+    if ($("actMsg")) $("actMsg").textContent = "✔ Tarjeta creada. Arrastrá las capturas en Trello (link de arriba).";
+  }
+
+  // ---------- activity: creator + comments ----------
+  const activityCache = new Map();
+  function keepActivity(arr) {
+    arr.forEach((c) => {
+      const a = activityCache.get(c.id);
+      if (!a) return;
+      if (c.last && a.seenLast && c.last > a.seenLast) Object.assign(c, { creator: a.creator, created: a.created });
+      else Object.assign(c, a);
+    });
+    return arr;
+  }
+  // Collect creator + comments from Trello actions, grouped by card id.
+  function collect(byCard, a) {
+    const id = a.data && a.data.card && a.data.card.id;
+    if (!id) return;
+    if (!byCard.has(id)) byCard.set(id, { creator: null, created: null, comments: [] });
+    const d = byCard.get(id);
+    const who = (a.memberCreator && a.memberCreator.fullName) || "?";
+    if (a.type === "commentCard") d.comments.push({ id: a.id, authorId: a.idMemberCreator, author: who, date: new Date(a.date), text: (a.data && a.data.text) || "", edited: !!(a.data && a.data.dateLastEdited) });
+    else { d.creator = who; d.created = new Date(a.date); }
+  }
+  function applyActivity(c, d) {
+    const data = { creator: d.creator, created: d.created, comments: d.comments.sort((x, y) => y.date - x.date), seenLast: c.last || null };
+    activityCache.set(c.id, data);
+    Object.assign(c, data);
+    cards.filter((x) => x.id === c.id && x !== c).forEach((x) => Object.assign(x, data));
+    return data;
+  }
+  async function fetchActivity(c) {
+    const acts = await api("GET", `/cards/${c.id}/actions`, { filter: ACT_FILTER, limit: 1000, memberCreator_fields: "fullName,username" });
+    const byCard = new Map();
+    (acts || []).forEach((a) => collect(byCard, a));
+    return applyActivity(c, byCard.get(c.id) || { creator: null, created: null, comments: [] });
+  }
+  let activityRun = 0;
+  // Whole board history in 1-2 calls (1000 actions per page), instead of one call per card.
+  async function loadAllActivity() {
+    const run = ++activityRun;
+    const byCard = new Map();
+    let before = null, pages = 0;
+    try {
+      do {
+        const params = { filter: ACT_FILTER, limit: 1000, memberCreator_fields: "fullName,username" };
+        if (before) params.before = before;
+        const acts = (await api("GET", `/boards/${BOARD_ID}/actions`, params)) || [];
+        acts.forEach((a) => collect(byCard, a));
+        before = acts.length === 1000 ? acts[acts.length - 1].id : null;
+        pages++;
+        $("status").textContent = `${cards.length} tarjetas · leyendo historial (${pages})…`;
+      } while (before && pages < 20 && run === activityRun);
+    } catch (e) {
+      if (run !== activityRun) return;
+      if (e && e.code === "unauthorized") return authFailed();
+      showBanner(`No se pudieron cargar autores y comentarios: ${esc(errText(e))} <button id="resumeAct">Reintentar</button>`, "warn");
+      const rb = $("resumeAct"); if (rb) rb.onclick = () => { showBanner(""); loadAllActivity(); };
+      updateStatus();
+      return;
+    }
+    if (run !== activityRun) return;
+    cards.forEach((c) => applyActivity(c, byCard.get(c.id) || { creator: null, created: null, comments: [] }));
+    fillFilters();
+    render();
+    updateStatus();
+  }
+
+  async function reloadLists(ids) {
+    for (const id of ids) {
+      try {
+        const cp = await api("GET", `/lists/${id}/cards`, { fields: CARD_FIELDS });
+        const nodes = (cp || []).filter((x) => !x.closed).map(mapCard).map(classify);
+        const order = new Map(lists.map((l, i) => [l.name, i]));
+        nodes.forEach((x) => (x.listOrder = order.has(x.list) ? order.get(x.list) : 999));
+        cards = cards.filter((x) => x.listId !== id).concat(keepActivity(nodes));
+      } catch (e) { showBanner("El cambio se guardó, pero no se pudo releer la lista. Tocá 🔄 Actualizar.", "warn"); }
+    }
+    lastLoaded = new Date();
+    updateStatus();
+    render();
+  }
+
+  // ---------- events ----------
+  $("main").addEventListener("click", (e) => {
+    const th = e.target.closest("th[data-sort]");
+    if (th) { const k = th.dataset.sort; sort = { key: k, dir: sort.key === k ? -sort.dir : 1 }; render(); return; }
+    const lr = e.target.closest("tr[data-list]");
+    if (lr) { $("fLista").value = lr.dataset.list; saveFilters(); location.hash = "tabla"; return; }
+    const r = e.target.closest("[data-id]");
+    if (r) openCard(r.dataset.id);
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("drawer").classList.remove("open"); });
+  ["q", "fTipo", "fPrio", "fEstado", "fTester", "fLista", "hideIdx"].forEach((id) => $(id).addEventListener("input", () => { saveFilters(); render(); }));
+  $("refresh").onclick = () => load(true);
+  $("newCard").onclick = () => { if (lists.length) openNewCard(); };
+  $("auto").onchange = schedule;
+  window.addEventListener("hashchange", render);
+  render();
+
+  // ---------- auth + boot ----------
+  function authUrl() {
+    return "https://trello.com/1/authorize?" + new URLSearchParams({
+      expiration: "30days", name: "Longevix QA Board", scope: "read,write", response_type: "token",
+      key: TRELLO_KEY, return_url: location.origin + location.pathname, callback_method: "fragment",
+    });
+  }
+  function setAuthUi() {
+    $("auth").textContent = token ? "Desconectar" : "Conectar Trello";
+    $("auth").classList.toggle("primary", !token);
+    $("refresh").disabled = !token;
+    if (!token) { $("newCard").disabled = true; $("who").textContent = ""; }
+  }
+  function showConnect(extra) {
+    $("status").textContent = "Sin conectar";
+    showBanner(`${extra ? esc(extra) + "<br>" : ""}Para ver el tablero, conectá tu cuenta de Trello. Se abre trello.com, tocás <b>Allow</b> y volvés acá. El permiso dura 30 días y queda solo en este navegador. <button class="primary" id="connect2">Conectar Trello</button>`, extra ? "err" : "");
+    $("connect2").onclick = () => (location.href = authUrl());
+    $("main").innerHTML = "";
+  }
+  function authFailed() {
+    token = null;
+    try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+    clearInterval(timer);
+    cards = []; members = []; me = null; lastLoaded = null;
+    setAuthUi();
+    showConnect("Tu conexión con Trello venció o se revocó.");
+  }
+  $("auth").onclick = () => {
+    if (!token) { location.href = authUrl(); return; }
+    confirmBox(`<h3>Desconectar Trello</h3><p>Se revoca el permiso de esta página en tu cuenta de Trello y se borra de este navegador. Para volver a usarla, tocás «Conectar Trello».</p>`, async () => {
+      try { await api("DELETE", `/tokens/${token}`); } catch (e) {}
+      token = null;
+      try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+      clearInterval(timer);
+      cards = []; members = []; me = null; lastLoaded = null;
+      setAuthUi();
+      showConnect();
+    });
+  };
+
+  (function boot() {
+    if (!TRELLO_KEY) {
+      $("status").textContent = "Falta configurar";
+      $("auth").disabled = true;
+      showBanner(`<div class="setup">Falta la API key de Trello. Pegala en <code>index.html</code>, en la línea <code>const TRELLO_KEY = "";</code> (solo la <b>API key</b>, nunca el Secret).</div>`, "warn");
+      $("main").innerHTML = "";
+      return;
+    }
+    const m = location.hash.match(/[#&]token=([0-9a-zA-Z]+)/);
+    if (m) {
+      token = m[1];
+      try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {}
+      history.replaceState(null, "", location.pathname + location.search + "#tabla");
+    } else if (/[#&]error=/.test(location.hash)) {
+      history.replaceState(null, "", location.pathname + location.search + "#tabla");
+    } else {
+      try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}
+    }
+    setAuthUi();
+    if (!token) { showConnect(); return; }
+    load();
+    schedule();
+  })();
+})();
+</script>
+</body>
+</html>
