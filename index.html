@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Longevix QA · Vistas del tablero Scheduling</title>
+<title>Longevix · Entorno de QA</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="theme-color" content="#f7f7f5" data-def="#f7f7f5" media="(prefers-color-scheme: light)">
@@ -51,6 +51,8 @@
   header { padding: 14px 20px 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
   .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .logo { display: block; height: 15px; aspect-ratio: 1515 / 96; background: var(--text); -webkit-mask: url(assets/logo.png) center / contain no-repeat; mask: url(assets/logo.png) center / contain no-repeat; }
+  .logolink { display: block; padding: 6px 0; border-radius: 6px; }
+  .logolink:hover .logo { background: var(--accent); }
   .brand .sep { width: 1px; height: 26px; background: var(--line); }
   .brand h1 { font-size: 15px; margin: 0; font-weight: 650; line-height: 1.2; white-space: nowrap; }
   .brand .status { display: block; font-size: 12px; }
@@ -122,8 +124,13 @@
   .s-Reportado { --c: var(--rep); } .s-Rechequear { --c: var(--rech); } .s-FIXED { --c: var(--fixed); }
   .s-Sin { background: none; color: var(--muted); font-weight: 500; } .s-Sin::before { background: none !important; box-shadow: inset 0 0 0 1px var(--muted); }
   .count { color: var(--muted); font-size: 13px; padding: 4px 0 10px; }
-  .tboard { display: flex; gap: 12px; overflow-x: auto; align-items: flex-start; padding-bottom: 12px; min-height: 60vh; }
-  .tlist { flex: 0 0 272px; background: var(--chip); border: 1px solid var(--line); border-radius: 12px; padding: 8px; max-height: calc(100vh - 230px); display: flex; flex-direction: column; }
+  .tboard { display: flex; gap: 12px; overflow-x: auto; align-items: flex-start; padding-bottom: 10px; height: 60vh; min-height: 320px; }
+  .tlist { flex: 0 0 272px; background: var(--chip); border: 1px solid var(--line); border-radius: 12px; padding: 8px; max-height: 100%; display: flex; flex-direction: column; }
+  .tlist.kc { border-top: 3px solid var(--c); }
+  .tlist h3 .n { font-size: 12px; font-weight: 600; min-width: 22px; text-align: center; padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--c, var(--indice)) var(--tint), transparent); color: color-mix(in srgb, var(--c, var(--indice)), var(--ink) var(--ink-mix)); }
+  .tcard .c { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; color: var(--muted); margin-bottom: 2px; }
+  .tcard .foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin-top: 5px; }
+  .tcard .foot span { display: inline-flex; align-items: center; gap: 3px; }
   .tlist h3 { margin: 2px 4px 8px; font-size: 13.5px; font-weight: 650; display: flex; justify-content: space-between; gap: 8px; }
   .tlist h3 .status { font-weight: 400; }
   .tcards { overflow-y: auto; flex: 1; padding: 0 2px; }
@@ -150,8 +157,8 @@
   .col { --c: var(--indice); background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--c); border-radius: 10px; padding: 10px; min-height: 120px; box-shadow: var(--shadow); }
   .col h3 { margin: 0 0 10px; font-size: 13.5px; display: flex; justify-content: space-between; align-items: center; }
   .col h3 .n { font-size: 12px; font-weight: 600; min-width: 22px; text-align: center; padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--c) var(--tint), transparent); color: color-mix(in srgb, var(--c), var(--ink) var(--ink-mix)); }
-  .col.k-rech { --c: var(--rech); } .col.k-fixed { --c: var(--fixed); } .col.k-rep { --c: var(--rep); } .col.k-bug { --c: var(--bug); }
-  .col.k-bloq { --c: var(--bloq); } .col.k-duda { --c: var(--duda); } .col.k-parcial { --c: var(--parcial); } .col.k-mejora { --c: var(--mejora); }
+  .k-rech { --c: var(--rech); } .k-fixed { --c: var(--fixed); } .k-rep { --c: var(--rep); } .k-bug { --c: var(--bug); }
+  .k-bloq { --c: var(--bloq); } .k-duda { --c: var(--duda); } .k-parcial { --c: var(--parcial); } .k-mejora { --c: var(--mejora); } .k-idx { --c: var(--indice); }
   .card { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; cursor: pointer; background: var(--bg); }
   .card:hover { border-color: var(--accent); }
   .card .c { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--muted); }
@@ -174,8 +181,75 @@
   .matrix td.zero { color: var(--line); }
   .drawer { position: fixed; inset: 0 0 0 auto; width: min(640px, 100%); background: var(--panel); border-left: 1px solid var(--line); padding: 18px 20px; overflow-y: auto; transform: translateX(100%); visibility: hidden; transition: transform .18s ease, visibility 0s .18s; z-index: 10; }
   .drawer.open { transform: none; visibility: visible; box-shadow: -8px 0 24px rgba(0,0,0,.15); transition: transform .18s ease; }
-  .drawer #close { float: right; }
-  .drawer h2 { font-size: 17px; margin: 4px 0 10px; line-height: 1.35; }
+  .drawer .dtop { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12.5px; }
+  .drawer .dtop .case { font-family: ui-monospace, Consolas, monospace; color: var(--text); font-weight: 600; white-space: nowrap; }
+  .drawer .dtop > span:not(.case):not(.grow) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .drawer .dtop a.iconbtn { display: inline-flex; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); }
+  .drawer .dtop a.iconbtn:hover { border-color: var(--accent); }
+  .drawer h2 { font-size: 17px; margin: 8px 0 8px; line-height: 1.35; outline: none; }
+  /* action bar: state chips + dropdowns, applied at once (undo in the toast) */
+  .abar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 0; margin-top: 10px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .abar .arow { margin: 0; gap: 4px; }
+  .abar .arow button { padding: 3px 10px; font-size: 12.5px; }
+  .drawer .arch:hover { color: var(--danger); border-color: var(--danger); }
+  .abar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 2px; }
+  .abar button:disabled, .abar details.busy { opacity: .55; pointer-events: none; }
+  .dd { position: relative; }
+  .dd > summary { list-style: none; display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; font-size: 12.5px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: var(--panel); }
+  .dd > summary::-webkit-details-marker { display: none; }
+  .dd > summary:hover, .dd[open] > summary { border-color: var(--accent); }
+  .ddm { position: absolute; left: 0; top: calc(100% + 6px); z-index: 15; min-width: 220px; max-width: min(360px, 80vw); max-height: 320px; overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.16); padding: 6px; }
+  .ddm.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; min-width: 260px; }
+  .ddm .opt { display: flex; width: 100%; align-items: center; gap: 8px; padding: 6px 8px; border: none; background: none; border-radius: 6px; text-align: left; font-size: 13px; color: var(--text); cursor: pointer; }
+  .ddm .opt:hover { background: var(--chip); }
+  .ddm .opt.cur { color: var(--muted); cursor: default; background: none; }
+  .ddm .hint { font-size: 12px; color: var(--muted); padding: 2px 8px 6px; width: 100%; }
+  #actMsg:empty { display: none; }
+  #actMsg { margin-top: 8px; }
+
+  /* filter dropdowns (multi-select) and quick presets */
+  .fdds { display: contents; }
+  .fdd { position: relative; }
+  .fdd > summary { list-style: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); cursor: pointer; white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+  .fdd > summary::-webkit-details-marker { display: none; }
+  .fdd > summary:hover, .fdd[open] > summary { border-color: var(--accent); }
+  .fdd.on > summary { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .fdd .ddm label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+  .fdd .ddm label:hover { background: var(--chip); }
+  .fdd .ddm .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+  .fdd .ddm .fclr { width: 100%; margin-top: 4px; justify-content: center; font-size: 12.5px; color: var(--accent); border-color: transparent; background: none; }
+  .quick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 20px 12px; margin-top: -4px; }
+  .quick .ql { color: var(--muted); font-size: 12.5px; margin-right: 2px; }
+  .quick button { padding: 3px 10px; font-size: 12.5px; border-radius: 999px; }
+  .quick button.on { background: var(--accent-btn); border-color: var(--accent-btn); color: #fff; }
+  kbd { font: 11px ui-monospace, Consolas, monospace; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; color: var(--muted); }
+
+  /* tablero: group-by switch */
+  .viewbar { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+  .seg a { padding: 4px 12px; text-decoration: none; color: var(--muted); font-size: 13px; }
+  .seg a + a { border-left: 1px solid var(--line); }
+  .seg a.on { background: var(--chip); color: var(--text); font-weight: 600; }
+
+  /* keyboard focus on clickable rows/cards */
+  tr.row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  tr.row:focus-visible td { background: var(--chip); }
+  .tcard:focus-visible, .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* toast with undo */
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 12px; max-width: min(560px, calc(100vw - 32px)); padding: 10px 12px 10px 16px; border-radius: 10px; background: #1d1d1b; color: #f2f1ed; box-shadow: 0 10px 30px rgba(0,0,0,.25); font-size: 13.5px; }
+  :root[data-theme="dark"] .toast { background: #ecebe6; color: #1d1d1b; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .toast { background: #ecebe6; color: #1d1d1b; } }
+  .toast .tmsg { flex: 1; }
+  .toast button { background: none; border: none; color: inherit; font-weight: 700; text-decoration: underline; padding: 4px 6px; }
+  .toast button.tx { text-decoration: none; opacity: .7; }
+
+  /* resumen: last 7 days + stuck in Rechequear */
+  .kpi.static { cursor: default; }
+  .kpi.static:hover { border-color: var(--line); }
+  .days { display: inline-block; min-width: 34px; text-align: center; padding: 1px 8px; border-radius: 999px; font-weight: 600; font-size: 12px; background: var(--chip); }
+  .days.old { background: color-mix(in srgb, var(--danger) 16%, transparent); color: color-mix(in srgb, var(--danger), var(--ink) var(--ink-mix)); }
+  .empty .emptyAct { margin-top: 10px; }
   .drawer .desc { white-space: normal; font-size: 13.5px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; word-wrap: break-word; }
   .ficha { display: grid; grid-template-columns: 150px 1fr; gap: 0; margin: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .ficha dt, .ficha dd { margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--line); }
@@ -260,6 +334,9 @@
     nav.tabs, .filters { padding-left: 16px; padding-right: 16px; }
     .filters input[type=search] { min-width: 0; flex: 1 1 100%; }
     .filters select { flex: 1 1 calc(50% - 4px); min-width: 0; }
+    .fdd { flex: 1 1 calc(50% - 4px); min-width: 0; } .fdd > summary { width: 100%; max-width: none; }
+    .quick { padding: 0 16px 12px; }
+    .abar .sep { display: none; }
     main { padding: 0 16px 32px; }
     .banner { margin: 12px 16px; }
     /* the card table turns into a list of cards */
@@ -295,13 +372,15 @@
   <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></symbol>
   <symbol id="i-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></symbol>
 </svg>
 <header>
   <div class="brand">
-    <span class="logo" role="img" aria-label="Longevix"></span>
+    <a href="#tablero" class="logolink" id="homeLink" title="Ir al tablero" aria-label="Longevix: ir al tablero"><span class="logo"></span></a>
     <span class="sep"></span>
-    <div><h1>QA · Scheduling</h1><span class="status" id="status">Sin conectar</span></div>
+    <div><h1>Entorno de QA</h1><span class="status" id="status">Sin conectar</span></div>
   </div>
   <span class="grow"></span>
   <div class="hactions">
@@ -322,25 +401,22 @@
 <div class="progress"><div id="bar"></div></div>
 <div id="banner"></div>
 <nav class="tabs">
-  <a href="#tablero" data-view="tablero">Tablero</a>
+  <a href="#tablero" data-view="tablero" id="tabBoard">Tablero</a>
   <a href="#tabla" data-view="tabla">Tabla</a>
-  <a href="#estado" data-view="estado">Por estado</a>
   <a href="#listas" data-view="listas">Por lista</a>
   <a href="#resumen" data-view="resumen">Resumen</a>
 </nav>
 <div class="filters" id="filters">
-  <input type="search" id="q" placeholder="Buscar caso, título o texto…">
-  <select id="fTipo"><option value="">Tipo: todos</option></select>
-  <select id="fPrio"><option value="">Prioridad: todas</option></select>
-  <select id="fEstado"><option value="">Estado: todos</option></select>
-  <select id="fTester"><option value="">Creada por: todos</option></select>
-  <select id="fLista"><option value="">Lista: todas</option></select>
+  <input type="search" id="q" placeholder="Buscar… (tecla /)" title="Busca en el caso, el título y la descripción" aria-label="Buscar (atajo: /)">
+  <div class="fdds" id="fdds"></div>
   <label class="chk"><input type="checkbox" id="hideIdx" checked> Ocultar Pendientes / Resumen</label>
   <button id="clearF" hidden></button>
 </div>
+<div class="quick" id="quick"></div>
 <main id="main"></main>
 <aside class="drawer" id="drawer"></aside>
 <div class="modal" id="modal"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script>
 (() => {
@@ -357,7 +433,8 @@
   const CARD_FIELDS = "name,desc,idList,labels,shortUrl,dateLastActivity,closed,pos,idAttachmentCover";
   const ATT_FIELDS = "id,name,mimeType,url,previews,isUpload,bytes,date";
   const COVER_Q = { attachments: "cover", attachment_fields: ATT_FIELDS };
-  const ACT_FILTER = "createCard,copyCard,convertToCardFromCheckItem,commentCard";
+  const ACT_FILTER = "createCard,copyCard,convertToCardFromCheckItem,commentCard,addLabelToCard";
+  const STALE_DAYS = 3; // Rechequear older than this is flagged in Resumen
   const STATE_LABELS = ["FIXED", "Rechequear", "Reportado"];
   const EDIT_LABELS = ["BUG", "MEJORA", "DUDA", "BLOQUEADO", "PARCIAL", "P1", "P2", "P3"];
 
@@ -406,11 +483,13 @@
     const name = c.name || "";
     let tipo;
     if (/\]\s*(Pendientes|Resumen)/i.test(name) || /^\[[A-Z]+\]\s*(Pendientes|Resumen)/i.test(name)) tipo = "Índice";
-    else if (has("BLOQUEADO") || /bloqueado/i.test(name)) tipo = "Bloqueado";
+    // Type labels win; the title is only a fallback for cards without a type label.
+    else if (has("BLOQUEADO")) tipo = "Bloqueado";
     else if (has("BUG")) tipo = "BUG";
     else if (has("MEJORA")) tipo = "Mejora";
     else if (has("DUDA")) tipo = "Duda";
     else if (has("PARCIAL")) tipo = "Parcial";
+    else if (/bloqueado/i.test(name)) tipo = "Bloqueado";
     else if (/\bBUG\b/i.test(name)) tipo = "BUG";
     else if (/mej[op]ra/i.test(name)) tipo = "Mejora";
     else if (/duda/i.test(name)) tipo = "Duda";
@@ -525,6 +604,7 @@
       if (!members.length) loadMembers();
       fillFilters();
       render();
+      syncCardFromHash();
     } catch (e) {
       showBanner(esc(errText(e)), "err");
       if (e && e.code === "unauthorized") authFailed();
@@ -537,11 +617,19 @@
     }
   }
 
-  function updateStatus() {
-    $("status").textContent = lastLoaded
-      ? `${cards.length} tarjetas · actualizado ${lastLoaded.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`
-      : "Sin datos todavía";
+  function ago(d) {
+    const m = Math.floor((Date.now() - d) / 60000);
+    if (m < 1) return "recién";
+    if (m < 60) return `hace ${m} min`;
+    const h = Math.floor(m / 60);
+    return h < 24 ? `hace ${h} h` : `hace ${Math.floor(h / 24)} d`;
   }
+  let statusBusy = false;
+  function updateStatus() {
+    $("status").textContent = lastLoaded ? `${cards.length} tarjetas · actualizado ${ago(lastLoaded)}` : "Sin datos todavía";
+    $("status").title = lastLoaded ? "Última lectura: " + lastLoaded.toLocaleString("es-AR") : "";
+  }
+  setInterval(() => { if (!loading && !statusBusy && lastLoaded) updateStatus(); }, 30000);
 
   function schedule() {
     clearInterval(timer);
@@ -551,58 +639,93 @@
     if (!document.hidden && $("auto").checked && lastLoaded && Date.now() - lastLoaded > AUTO_MS) load(true);
   });
 
-  // ---------- filters ----------
-  function fillSelect(id, label, values, current) {
-    const s = $(id);
-    s.innerHTML = `<option value="">${label}</option>` + values.map((v) => `<option ${v === current ? "selected" : ""}>${esc(v)}</option>`).join("");
-  }
+  // ---------- filters (multi-select) ----------
+  const FDEF = [["fTipo", "Tipo", "todos"], ["fPrio", "Prioridad", "todas"], ["fEstado", "Estado", "todos"], ["fTester", "Creada por", "todos"], ["fLista", "Lista", "todas"]];
+  const FKEYS = FDEF.map((d) => d[0]);
+  const fsel = Object.fromEntries(FKEYS.map((k) => [k, new Set()]));
+  let fopts = {};
   function fillFilters() {
-    const cur = (id) => $(id).value;
-    fillSelect("fTipo", "Tipo: todos", TIPOS.filter((t) => cards.some((c) => c.tipo === t)), cur("fTipo"));
-    fillSelect("fPrio", "Prioridad: todas", PRIOS, cur("fPrio"));
-    fillSelect("fEstado", "Estado: todos", ESTADOS, cur("fEstado"));
-    fillSelect("fTester", "Creada por: todos", [...new Set(cards.map(who))].sort(), cur("fTester"));
-    fillSelect("fLista", "Lista: todas", lists.map((l) => l.name), cur("fLista"));
-    try {
-      const saved = JSON.parse(localStorage.getItem("lgx-filters") || "{}");
-      if (!fillFilters.restored) { fillFilters.restored = true; for (const k in saved) if ($(k)) { if ($(k).type === "checkbox") $(k).checked = saved[k]; else $(k).value = saved[k]; } }
-    } catch (e) {}
+    fopts = { fTipo: TIPOS.filter((t) => cards.some((c) => c.tipo === t)), fPrio: PRIOS, fEstado: ESTADOS,
+      fTester: [...new Set(cards.map(who))].sort(), fLista: lists.map((l) => l.name) };
+    if (!fillFilters.restored) {
+      fillFilters.restored = true;
+      try {
+        const saved = JSON.parse(localStorage.getItem("lgx-filters") || "{}");
+        if (typeof saved.q === "string") $("q").value = saved.q;
+        if (typeof saved.hideIdx === "boolean") $("hideIdx").checked = saved.hideIdx;
+        FKEYS.forEach((k) => { const v = saved[k]; fsel[k] = new Set((Array.isArray(v) ? v : v ? [v] : []).filter((x) => typeof x === "string")); });
+      } catch (e) {}
+    }
+    renderFdds();
+  }
+  const fSummary = (k) => {
+    const [, label, all] = FDEF.find((d) => d[0] === k), sel = [...fsel[k]];
+    return `${label}: ${sel.length ? esc(sel[0]) + (sel.length > 1 ? ` +${sel.length - 1}` : "") : all}`;
+  };
+  function renderFdds() {
+    $("fdds").innerHTML = FDEF.map(([k]) => {
+      const vals = [...new Set([...(fopts[k] || []), ...fsel[k]])];
+      const dot = ["fTipo", "fPrio", "fEstado"].includes(k);
+      return `<details class="fdd${fsel[k].size ? " on" : ""}" data-k="${k}"><summary><span class="fs">${fSummary(k)}</span>${ic("chevron", 1)}</summary><div class="ddm">` +
+        vals.map((v) => `<label><input type="checkbox" value="${esc(v)}" ${fsel[k].has(v) ? "checked" : ""}>${dot ? `<span class="dot" ${chipStyle(v)}></span>` : ""}${esc(v)}</label>`).join("") +
+        `<button class="fclr" data-k="${k}" ${fsel[k].size ? "" : "hidden"}>Quitar este filtro</button></div></details>`;
+    }).join("");
   }
   function saveFilters() {
     try {
-      const o = {}; ["q", "fTipo", "fPrio", "fEstado", "fTester", "fLista", "hideIdx"].forEach((k) => (o[k] = $(k).type === "checkbox" ? $(k).checked : $(k).value));
+      const o = { q: $("q").value, hideIdx: $("hideIdx").checked };
+      FKEYS.forEach((k) => (o[k] = [...fsel[k]]));
       localStorage.setItem("lgx-filters", JSON.stringify(o));
     } catch (e) {}
   }
   function filtered() {
     const q = $("q").value.trim().toLowerCase();
-    const f = { tipo: $("fTipo").value, prio: $("fPrio").value, estado: $("fEstado").value, tester: $("fTester").value, list: $("fLista").value };
-    const hide = $("hideIdx").checked;
+    const S = fsel, hide = $("hideIdx").checked;
     return cards.filter((c) =>
       (!hide || c.tipo !== "Índice") &&
-      (!f.tipo || c.tipo === f.tipo || c.extra.includes(f.tipo)) &&
-      (!f.prio || c.prio === f.prio) &&
-      (!f.estado || c.estado === f.estado) &&
-      (!f.tester || who(c) === f.tester) &&
-      (!f.list || c.list === f.list) &&
+      (!S.fTipo.size || S.fTipo.has(c.tipo) || c.extra.some((x) => S.fTipo.has(x))) &&
+      (!S.fPrio.size || S.fPrio.has(c.prio)) &&
+      (!S.fEstado.size || S.fEstado.has(c.estado)) &&
+      (!S.fTester.size || S.fTester.has(who(c))) &&
+      (!S.fLista.size || S.fLista.has(c.list)) &&
       (!q || (c.name + " " + c.desc).toLowerCase().includes(q)));
   }
-
-  const FILTER_IDS = ["q", "fTipo", "fPrio", "fEstado", "fTester", "fLista"];
-  // Reset every filter, apply the given ones and show the table.
-  function applyFilters(f) {
-    FILTER_IDS.forEach((k) => ($(k).value = ""));
+  const activeFilters = () => FKEYS.filter((k) => fsel[k].size).length + ($("q").value.trim() ? 1 : 0);
+  // Reset every filter and apply the given ones ({ fTipo: "BUG" } or arrays). Goes to the table unless stay is set.
+  function applyFilters(f, stay) {
+    $("q").value = "";
     $("hideIdx").checked = true;
-    for (const k in f) { if (k === "hideIdx") $(k).checked = f[k]; else if ($(k)) $(k).value = f[k]; }
+    FKEYS.forEach((k) => fsel[k].clear());
+    for (const k in f) {
+      if (k === "hideIdx") $("hideIdx").checked = f[k];
+      else if (k === "q") $("q").value = f[k];
+      else if (fsel[k]) fsel[k] = new Set([].concat(f[k]));
+    }
+    renderFdds();
     saveFilters();
-    if (currentView() === "tabla") render(); else location.hash = "tabla";
+    if (stay || route().view === "tabla") render(); else location.hash = "tabla";
+  }
+  // Quick presets: one tap sets a common combination; tapping it again clears it.
+  const QUICK = [
+    ["Mis tarjetas", () => (me ? { fTester: [me.fullName] } : null)],
+    ["Para rechequear", () => ({ fEstado: ["Rechequear"] })],
+    ["P1 abiertos", () => ({ fPrio: ["P1"], fEstado: ["Rechequear", "Reportado", "Sin etiqueta"] })],
+  ];
+  function presetActive(f) {
+    if (!f || $("q").value.trim() || !$("hideIdx").checked) return false;
+    return FKEYS.every((k) => { const want = new Set(f[k] || []); return want.size === fsel[k].size && [...want].every((v) => fsel[k].has(v)); });
   }
   function updateFilterUi() {
-    let n = 0;
-    FILTER_IDS.forEach((k) => { const on = !!$(k).value.trim(); $(k).classList.toggle("on", on); n += on; });
+    const n = activeFilters();
+    $("q").classList.toggle("on", !!$("q").value.trim());
     $("clearF").hidden = !n;
     $("clearF").innerHTML = `${ic("x", 1)} Limpiar filtros (${n})`;
+    $("quick").innerHTML = `<span class="ql">Atajos:</span>` + QUICK.map(([label, f], i) => {
+      const preset = f();
+      return `<button data-quick="${i}" class="${presetActive(preset) ? "on" : ""}" ${preset ? "" : `disabled title="Se activa cuando se carga tu usuario"`}>${label}</button>`;
+    }).join("");
   }
+  const emptyState = (txt) => `<div class="empty">${txt || "Ninguna tarjeta con estos filtros."}${activeFilters() ? `<div class="emptyAct"><button data-clear="1">${ic("x", 1)} Limpiar filtros</button></div>` : ""}</div>`;
   function skeleton() {
     const w = [[8, 46, 9, 5, 11, 12], [8, 38, 7, 5, 9, 14], [8, 52, 9, 5, 11, 10], [8, 33, 10, 5, 0, 13], [8, 44, 7, 5, 11, 12], [8, 40, 9, 5, 9, 11], [8, 49, 8, 5, 0, 14]];
     return `<div class="count">&nbsp;</div><div class="skel" aria-label="Cargando tarjetas">` +
@@ -614,26 +737,68 @@
   function who(c) { return c.creator ? c.creator : c.tester !== "—" ? c.tester + " (est.)" : "—"; }
   const tagTipo = (c) => `<span class="tag t-${esc(c.tipo)}">${esc(c.tipo)}</span>` + c.extra.map((x) => `<span class="tag t-${esc(x)}">${esc(x)}</span>`).join("");
   const CHIP_VAR = { BUG: "--bug", MEJORA: "--mejora", Mejora: "--mejora", DUDA: "--duda", Duda: "--duda", BLOQUEADO: "--bloq", Bloqueado: "--bloq", PARCIAL: "--parcial",
-    P1: "--p1", P2: "--p2", P3: "--p3", FIXED: "--fixed", Rechequear: "--rech", Reportado: "--rep" };
+    P1: "--p1", P2: "--p2", P3: "--p3", FIXED: "--fixed", Rechequear: "--rech", Reportado: "--rep", Parcial: "--parcial", "Índice": "--indice" };
   const chipStyle = (k) => `style="--c: var(${CHIP_VAR[k] || "--indice"})"`;
   const tagPrio = (c) => c.prio === "—" ? "" : `<span class="tag p-${c.prio}">${c.prio}</span>`;
   const tagEstado = (c) => `<span class="tag s s-${c.estado === "Sin etiqueta" ? "Sin" : c.estado}">${esc(c.estado)}</span>`;
   const fmtDate = (d) => d ? d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) : "";
 
-  function currentView() { const h = location.hash.replace("#", ""); return ["tablero", "tabla", "estado", "listas", "resumen"].includes(h) ? h : "tabla"; }
+  // ---------- routing: #view or #view/<cardShortLink> ----------
+  const VIEWS = ["tablero", "estado", "tabla", "listas", "resumen"];
+  function route() {
+    const [v, card] = location.hash.replace(/^#/, "").split("/");
+    return { view: VIEWS.includes(v) ? v : "tabla", card: card && /^[\w-]+$/.test(card) ? card : "" };
+  }
+  const currentView = () => route().view;
+  const cardKey = (c) => ((c.url || "").match(/\/c\/([\w-]+)/) || [])[1] || c.id;
+  const findCard = (k) => cards.find((c) => cardKey(c) === k || c.id === k);
+  const GROUP_KEY = "lgx-group";
+  const savedGroup = () => { try { return localStorage.getItem(GROUP_KEY) === "estado" ? "estado" : "tablero"; } catch (e) { return "tablero"; } };
+
+  // Re-rendering replaces the view's HTML: keep the scroll of the board, its lists and the page.
+  function saveScroll() {
+    const b = document.querySelector(".tboard");
+    return { view: render.lastView, y: window.scrollY, x: b ? b.scrollLeft : 0,
+      lists: b ? [...b.querySelectorAll(".tcards")].map((e) => [e.dataset.k, e.scrollTop]) : [] };
+  }
+  function restoreScroll(st, view) {
+    if (st.view !== view) return;
+    const b = document.querySelector(".tboard");
+    if (b) {
+      b.scrollLeft = st.x;
+      st.lists.forEach(([k, top]) => { const e = b.querySelector(`.tcards[data-k="${CSS.escape(k || "")}"]`); if (e) e.scrollTop = top; });
+    }
+    window.scrollTo(window.scrollX, st.y);
+  }
+  // The board takes exactly the height left in the window, so only its lists scroll (no second page scrollbar).
+  function fitBoard() {
+    const b = document.querySelector(".tboard");
+    if (!b) return;
+    const top = b.getBoundingClientRect().top + window.scrollY;
+    const pad = parseFloat(getComputedStyle($("main")).paddingBottom) || 0;
+    b.style.height = Math.max(320, Math.floor(window.innerHeight - top - pad - 1)) + "px";
+  }
+  window.addEventListener("resize", fitBoard);
 
   function render() {
     const v = currentView();
-    document.querySelectorAll("nav.tabs a").forEach((a) => a.classList.toggle("active", a.dataset.view === v));
-    $("filters").style.display = v === "resumen" ? "none" : "";
+    const boardView = v === "tablero" || v === "estado";
+    if (boardView) { try { localStorage.setItem(GROUP_KEY, v); } catch (e) {} }
+    $("tabBoard").href = "#" + (boardView ? v : savedGroup());
+    document.querySelectorAll("nav.tabs a").forEach((a) => a.classList.toggle("active", a.dataset.view === (boardView ? "tablero" : v)));
+    $("filters").style.display = $("quick").style.display = v === "resumen" ? "none" : "";
     updateFilterUi();
     if (!lastLoaded) { if (token && loading) $("main").innerHTML = skeleton(); return; }
+    const st = saveScroll();
     const rows = filtered();
     if (v === "tabla") renderTable(rows);
     else if (v === "tablero") renderTrello(rows);
     else if (v === "estado") renderBoard(rows);
     else if (v === "listas") renderMatrix(rows);
     else renderSummary();
+    fitBoard();
+    restoreScroll(st, v);
+    render.lastView = v;
   }
 
   function renderTable(rows) {
@@ -644,50 +809,53 @@
     const th = (k, l) => `<th data-sort="${k}">${l}${sort.key === k ? (sort.dir > 0 ? " ▲" : " ▼") : ""}</th>`;
     $("main").innerHTML = `<div class="count">${rows.length} tarjetas</div>` + (rows.length ? `<table class="cards"><thead><tr>
       ${th("caseId", "Caso")}${th("title", "Título")}${th("tipo", "Tipo")}${th("prio", "Prio")}${th("estado", "Estado")}${th("who", "Creada por")}${th("ncom", ic("chat", 1))}${th("list", "Lista")}${th("last", "Actividad")}
-      </tr></thead><tbody>` + rows.map((c) => `<tr class="row" data-id="${esc(c.id)}">
+      </tr></thead><tbody>` + rows.map((c) => `<tr class="row" tabindex="0" data-id="${esc(c.id)}">
         <td class="case">${esc(c.caseId)}</td><td class="title">${esc(c.title)}</td><td>${tagTipo(c)}</td><td>${tagPrio(c)}</td>
         <td>${tagEstado(c)}</td><td class="who">${esc(who(c))}</td><td class="ncom">${c.comments ? (c.comments.length ? ic("chat", 1) + " " + c.comments.length : "") : "…"}</td><td class="list">${esc(c.listShort)}</td><td class="date">${fmtDate(c.last)}</td></tr>`).join("") +
-      `</tbody></table><p class="status">"Creada por" sale del historial de Trello. Si dice "(est.)", todavía no se cargó y es una estimación según la cuenta usada en la descripción.</p>` : `<div class="empty">Ninguna tarjeta con estos filtros.</div>`);
+      `</tbody></table><p class="status">"Creada por" sale del historial de Trello. Si dice "(est.)", todavía no se cargó y es una estimación según la cuenta usada en la descripción.</p>` : emptyState());
   }
+
+  const viewbar = (v) => `<div class="viewbar">Agrupar por <div class="seg"><a href="#tablero" class="${v === "tablero" ? "on" : ""}">Lista</a><a href="#estado" class="${v === "estado" ? "on" : ""}">Estado</a></div></div>`;
+  const cardFoot = (c) => `${c.desc ? `<span title="Tiene descripción">${ic("text", 1)}</span>` : ""}${c.comments && c.comments.length ? `<span>${ic("chat", 1)} ${c.comments.length}</span>` : ""}${who(c) !== "—" ? `<span>${esc(who(c))}</span>` : ""}`;
 
   // Trello-like view: one column per list, cards in the same order as in Trello.
   const LCOLORS = { green: "#4bce97", yellow: "#f5cd47", orange: "#fea362", red: "#f87168", purple: "#9f8fef", blue: "#579dff", sky: "#6cc3e0", lime: "#94c748", pink: "#e774bb", black: "#8590a2" };
   const lcolor = (c) => LCOLORS[String(c || "").replace(/_(dark|light)$/, "")] || "#8590a2";
   function renderTrello(rows) {
-    const listF = $("fLista").value;
-    const shown = lists.filter((l) => !listF || l.name === listF);
-    $("main").innerHTML = `<div class="tboard">` + shown.map((l) => {
+    const shown = lists.filter((l) => !fsel.fLista.size || fsel.fLista.has(l.name));
+    $("main").innerHTML = viewbar("tablero") + `<div class="tboard">` + shown.map((l) => {
       const cs = rows.filter((c) => c.listId === l.id).sort((a, b) => a.pos - b.pos);
-      return `<div class="tlist"><h3><span>${esc(l.name)}</span><span class="status">${cs.length}</span></h3><div class="tcards">` +
-        cs.map((c) => `<div class="tcard" data-id="${esc(c.id)}">` +
+      return `<div class="tlist"><h3><span>${esc(l.name)}</span><span class="status">${cs.length}</span></h3><div class="tcards" data-k="${esc(l.id)}">` +
+        cs.map((c) => `<div class="tcard" tabindex="0" data-id="${esc(c.id)}">` +
           (c.cover ? `<img class="tcover" alt="" data-src="${esc(pickPreview(c.cover, 300))}" data-href="${esc(c.url)}">` : "") +
           (c.labelObjs.length ? `<div class="lbls">${c.labelObjs.map((x) => `<span class="lbl" style="background:${lcolor(x.color)}" title="${esc(x.name)}"></span>`).join("")}</div>` : "") +
-          `<div class="n">${esc(c.name)}</div>` +
-          `<div class="badges">${c.desc ? `<span title="Tiene descripción">${ic("text", 1)}</span>` : ""}${c.comments && c.comments.length ? `<span>${ic("chat", 1)} ${c.comments.length}</span>` : ""}${who(c) !== "—" ? `<span>${esc(who(c))}</span>` : ""}</div></div>`).join("") +
+          `<div class="n">${esc(c.name)}</div><div class="badges">${cardFoot(c)}</div></div>`).join("") +
         `</div><button class="tadd" data-newlist="${esc(l.id)}">${ic("plus", 1)} Añadí una tarjeta</button></div>`;
     }).join("") + `</div>`;
     fillImages($("main"));
   }
 
+  // Same board, grouped by state instead of by list.
   function renderBoard(rows) {
+    const open = (c) => c.estado !== "Rechequear" && c.estado !== "FIXED";
     const cols = [
       ["Rechequear", (c) => c.estado === "Rechequear", "rech"],
       ["FIXED", (c) => c.estado === "FIXED", "fixed"],
       ["BUG reportado", (c) => c.estado === "Reportado" && c.tipo === "BUG", "rep"],
       ["BUG sin reportar", (c) => c.estado === "Sin etiqueta" && c.tipo === "BUG", "bug"],
-      ["Bloqueado", (c) => c.estado !== "Rechequear" && c.estado !== "FIXED" && (c.tipo === "Bloqueado" || c.extra.includes("Bloqueado")), "bloq"],
-      ["Duda", (c) => c.estado !== "Rechequear" && c.estado !== "FIXED" && c.tipo === "Duda", "duda"],
-      ["Parcial", (c) => c.estado !== "Rechequear" && c.estado !== "FIXED" && c.tipo === "Parcial", "parcial"],
-      ["Mejora", (c) => c.estado !== "Rechequear" && c.estado !== "FIXED" && c.tipo === "Mejora", "mejora"],
+      ["Bloqueado", (c) => open(c) && (c.tipo === "Bloqueado" || c.extra.includes("Bloqueado")), "bloq"],
+      ["Duda", (c) => open(c) && c.tipo === "Duda", "duda"],
+      ["Parcial", (c) => open(c) && c.tipo === "Parcial", "parcial"],
+      ["Mejora", (c) => open(c) && c.tipo === "Mejora", "mejora"],
       ["Pendientes / Resumen", (c) => c.tipo === "Índice", "idx"],
     ];
-    $("main").innerHTML = `<div class="board">` + cols.map(([t, f, k]) => {
+    $("main").innerHTML = viewbar("estado") + `<div class="tboard">` + cols.map(([t, f, k]) => {
       const cs = rows.filter(f);
-      if (t === "Pendientes / Resumen" && $("hideIdx").checked) return "";
-      return `<div class="col k-${k}"><h3><span>${esc(t)}</span><span class="n">${cs.length}</span></h3>` +
-        cs.map((c) => `<div class="card" data-id="${esc(c.id)}"><div class="c">${esc(c.caseId)} · ${esc(c.listShort)}</div>
-          <div class="n">${esc(c.title)}</div><div class="foot">${tagPrio(c)}${who(c) !== "—" ? `<span>${esc(who(c))}</span>` : ""}${c.comments && c.comments.length ? `<span>${ic("chat", 1)} ${c.comments.length}</span>` : ""}</div></div>`).join("") +
-        (cs.length ? "" : `<p class="meta" style="margin:4px 2px">Nada por acá.</p>`) + `</div>`;
+      if (k === "idx" && $("hideIdx").checked) return "";
+      return `<div class="tlist kc k-${k}"><h3><span>${esc(t)}</span><span class="n">${cs.length}</span></h3><div class="tcards" data-k="${k}">` +
+        cs.map((c) => `<div class="tcard" tabindex="0" data-id="${esc(c.id)}"><div class="c">${esc(c.caseId)} · ${esc(c.listShort)}</div>
+          <div class="n">${esc(c.title)}</div><div class="foot">${tagPrio(c)}${cardFoot(c)}</div></div>`).join("") +
+        (cs.length ? "" : `<p class="meta" style="margin:4px 2px">Nada por acá.</p>`) + `</div></div>`;
     }).join("") + `</div>`;
   }
 
@@ -699,15 +867,23 @@
     }).filter((x) => x.cs.length);
     const cell = (n) => `<td class="num ${n ? "" : "zero"}">${n || "·"}</td>`;
     $("main").innerHTML = byList.length ? `<div class="hscroll"><table class="matrix"><thead><tr><th>Lista</th>${types.map((t) => `<th class="num">${t}</th>`).join("")}<th class="num">P1</th><th class="num">Rechequear</th><th class="num">Total</th></tr></thead><tbody>` +
-      byList.map((x) => `<tr class="row" data-list="${esc(x.l.name)}"><td>${esc(x.l.name)}</td>${x.n.map(cell).join("")}${cell(x.p1)}${cell(x.rech)}${cell(x.cs.length)}</tr>`).join("") +
-      `</tbody></table></div><p class="status">Tocá una fila para ver sus tarjetas en la tabla.</p>` : `<div class="empty">Ninguna tarjeta con estos filtros.</div>`;
+      byList.map((x) => `<tr class="row" tabindex="0" data-list="${esc(x.l.name)}"><td>${esc(x.l.name)}</td>${x.n.map(cell).join("")}${cell(x.p1)}${cell(x.rech)}${cell(x.cs.length)}</tr>`).join("") +
+      `</tbody></table></div><p class="status">Tocá una fila para ver sus tarjetas en la tabla.</p>` : emptyState();
   }
 
+  let weekStats = null; // { created, fixed } over the last 7 days, from the board history
+  const daysSince = (d) => (d ? Math.floor((Date.now() - d) / 86400000) : null);
   function renderSummary() {
     const open = cards.filter((c) => c.tipo !== "Índice");
     // Each KPI opens the table with the matching filters; BUG P1 and Rechequear stand out when > 0.
     const k = (l, v, f, hot) => `<button class="kpi${hot && v ? " hot k-" + hot : ""}" data-f="${esc(JSON.stringify(f))}" ${v ? "" : "disabled"} title="${v ? "Ver en la tabla" : ""}"><div class="v">${v}</div><div class="l">${l}</div></button>`;
+    const kStatic = (l, v, title) => `<div class="kpi static" title="${esc(title)}"><div class="v">${v}</div><div class="l">${l}</div></div>`;
     const n = (f) => open.filter(f).length;
+    // Cards waiting for a recheck, oldest first (days since the Rechequear label was added).
+    const rech = open.filter((c) => c.estado === "Rechequear").map((c) => ({ c, d: daysSince(c.labelAdded && c.labelAdded.RECHEQUEAR) }))
+      .sort((a, b) => (b.d ?? -1) - (a.d ?? -1));
+    const stale = rech.filter((x) => x.d !== null && x.d >= STALE_DAYS).length;
+    const ws = weekStats;
     $("main").innerHTML = `<div class="kpis">` +
       k("BUG P1", n((c) => c.tipo === "BUG" && c.prio === "P1"), { fTipo: "BUG", fPrio: "P1" }, "p1") +
       k("Para rechequear", n((c) => c.estado === "Rechequear"), { fEstado: "Rechequear" }, "rech") +
@@ -719,12 +895,19 @@
       k("Mejoras", n((c) => c.tipo === "Mejora"), { fTipo: "Mejora" }) +
       k("Tarjetas (sin índices)", open.length, {}) +
       k("Pendientes / Resumen", cards.length - open.length, { fTipo: "Índice", hideIdx: false }) +
-      `</div><h3 class="sec">Por quién la creó</h3><div class="hscroll"><table class="matrix"><thead><tr><th>Creada por</th><th class="num">BUG</th><th class="num">Duda</th><th class="num">Mejora</th><th class="num">Bloqueado</th><th class="num">Rechequear</th></tr></thead><tbody>` +
+      `</div><h3 class="sec">Últimos 7 días</h3><div class="kpis">` +
+      kStatic("Tarjetas creadas", ws ? ws.created : "…", "Incluye las que después se archivaron.") +
+      kStatic("Pasaron a FIXED", ws ? ws.fixed : "…", "Tarjetas a las que se les puso la etiqueta FIXED en los últimos 7 días.") +
+      `</div><h3 class="sec">Esperando rechequeo${stale ? ` · <span style="color:var(--danger)">${stale} con más de ${STALE_DAYS} días</span>` : ""}</h3>` +
+      (rech.length ? `<div class="hscroll"><table class="matrix"><thead><tr><th>Caso</th><th>Título</th><th>Creada por</th><th class="num">Días en Rechequear</th></tr></thead><tbody>` +
+        rech.map(({ c, d }) => `<tr class="row" tabindex="0" data-id="${esc(c.id)}"><td class="case">${esc(c.caseId)}</td><td>${esc(c.title)}</td><td>${esc(who(c))}</td><td class="num">${d === null ? `<span class="days" title="${ws ? "El cambio es anterior al historial que lee la página" : "Leyendo historial…"}">—</span>` : `<span class="days${d >= STALE_DAYS ? " old" : ""}">${d}</span>`}</td></tr>`).join("") +
+        `</tbody></table></div>` : `<p class="meta">No hay tarjetas esperando rechequeo.</p>`) +
+      `<h3 class="sec" style="margin-top:22px">Por quién la creó</h3><div class="hscroll"><table class="matrix"><thead><tr><th>Creada por</th><th class="num">BUG</th><th class="num">Duda</th><th class="num">Mejora</th><th class="num">Bloqueado</th><th class="num">Rechequear</th></tr></thead><tbody>` +
       [...new Set(open.map(who))].sort().map((t) => {
         const cs = open.filter((c) => who(c) === t);
         const c2 = (f) => { const v = cs.filter(f).length; return `<td class="num ${v ? "" : "zero"}">${v || "·"}</td>`; };
-        return `<tr class="row" data-f="${esc(JSON.stringify({ fTester: t }))}"><td>${esc(t)}</td>${c2((c) => c.tipo === "BUG")}${c2((c) => c.tipo === "Duda")}${c2((c) => c.tipo === "Mejora")}${c2((c) => c.tipo === "Bloqueado")}${c2((c) => c.estado === "Rechequear")}</tr>`;
-      }).join("") + `</tbody></table></div><p class="status">Tocá un número o una fila para ver esas tarjetas en la tabla.</p>`;
+        return `<tr class="row" tabindex="0" data-f="${esc(JSON.stringify({ fTester: t }))}"><td>${esc(t)}</td>${c2((c) => c.tipo === "BUG")}${c2((c) => c.tipo === "Duda")}${c2((c) => c.tipo === "Mejora")}${c2((c) => c.tipo === "Bloqueado")}${c2((c) => c.estado === "Rechequear")}</tr>`;
+      }).join("") + `</tbody></table></div><p class="status">Tocá un número o una fila para ver esas tarjetas.</p>`;
   }
 
   // ---------- drawer ----------
@@ -766,27 +949,56 @@
       return `<dt>${esc(f.k)}</dt>` + (v ? `<dd>${v}</dd>` : `<dd class="empty-f">—</dd>`);
     }).join("") + `</dl>`;
   }
-  function openCard(id) {
+  // ---------- drawer open/close (with #view/<card> in the URL) ----------
+  let drawerPushed = false, lastFocus = null;
+  const drawerOpen = () => $("drawer").classList.contains("open");
+  function closeDrawer(fromHash) {
+    if (!drawerOpen()) return;
+    $("drawer").classList.remove("open");
+    document.querySelectorAll("#drawer details[open]").forEach((d) => (d.open = false));
+    if (!fromHash && route().card) {
+      if (drawerPushed) history.back();
+      else history.replaceState(null, "", "#" + currentView());
+    }
+    drawerPushed = false;
+    const back = lastFocus && document.contains(lastFocus) ? lastFocus : openCardId && $("main").querySelector(`[data-id="${CSS.escape(openCardId)}"]`);
+    if (back) back.focus({ preventScroll: true });
+  }
+  function openCard(id, opts) {
+    opts = opts || {};
     const c = cards.find((x) => x.id === id);
     if (!c) return;
-    $("drawer").innerHTML = `<button id="close" class="iconbtn" aria-label="Cerrar" title="Cerrar (Esc)">${ic("x")}</button>
-      <h2>${esc(c.name)}</h2>
+    const same = drawerOpen() && openCardId === c.id;
+    const draft = same && $("cmtText") ? $("cmtText").value : "";
+    const keepTop = same ? $("drawer").scrollTop : 0;
+    if (!drawerOpen()) lastFocus = document.activeElement;
+    // Put the card in the URL so it can be shared and Back closes it.
+    const want = "#" + currentView() + "/" + cardKey(c);
+    if (!opts.fromHash && location.hash !== want) {
+      if (drawerOpen()) history.replaceState(null, "", want);
+      else { history.pushState(null, "", want); drawerPushed = true; }
+    }
+    const mine = (l) => c.labelIds.includes(LABELS[l]);
+    $("drawer").innerHTML = `<div class="dtop"><span class="case">${esc(c.caseId)}</span> · <span>${esc(c.list)}</span><span class="grow"></span>
+        <button id="copyLink" class="iconbtn" title="Copiar link a esta tarjeta" aria-label="Copiar link">${ic("link")}</button>
+        <a class="iconbtn" href="${esc(c.url)}" target="_blank" rel="noopener" title="Abrir en Trello" aria-label="Abrir en Trello">${ic("ext")}</a>
+        <button data-act="archive" class="iconbtn arch" title="Archivar tarjeta" aria-label="Archivar tarjeta">${ic("archive")}</button>
+        <button id="close" class="iconbtn" aria-label="Cerrar" title="Cerrar (Esc)">${ic("x")}</button></div>
+      <h2 tabindex="-1">${esc(c.title || c.name)}</h2>
       <div>${tagTipo(c)}${tagPrio(c)}${tagEstado(c)}</div>
-      <p class="meta">${esc(c.list)} · ${c.creator ? `creada por <b>${esc(c.creator)}</b> el ${c.created.toLocaleString("es-AR")}` : `creada por: ${esc(who(c))}`} · última actividad ${c.last ? c.last.toLocaleString("es-AR") : "—"}</p>
-      <p><a href="${esc(c.url)}" target="_blank" rel="noopener">Abrir en Trello ${ic("ext", 1)}</a></p>
-      <div class="actions">
-        <div class="arow"><span class="alabel">Estado</span>
-          ${STATE_LABELS.map((s) => `<button data-act="state" data-v="${s}" class="st ${c.estado === s ? "on" : ""}" ${chipStyle(s)}>${s}</button>`).join("")}
-          <button data-act="state" data-v="">Sin estado</button></div>
-        <div class="arow"><span class="alabel">Etiquetas</span>
-          ${EDIT_LABELS.map((l) => `<label class="lchk chip" ${chipStyle(l)}><input type="checkbox" data-lab="${l}" ${c.labelIds.includes(LABELS[l]) ? "checked" : ""}>${l}</label>`).join("")}
-          <button data-act="labels">Aplicar etiquetas</button></div>
-        <div class="arow"><span class="alabel">Mover a</span>
-          <select id="moveTo">${lists.map((l) => `<option value="${esc(l.id)}" ${l.id === c.listId ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select>
-          <button data-act="move">Mover</button></div>
-        <div class="arow"><span class="alabel">Archivar</span><button data-act="archive" class="danger">Archivar tarjeta</button></div>
-        <div id="actMsg" class="status"></div>
+      <p class="meta" id="dmeta">${dmeta(c)}</p>
+      <div class="abar">
+        <div class="arow" role="group" aria-label="Estado">
+          ${STATE_LABELS.map((s) => `<button data-act="state" data-v="${s}" class="st ${c.estado === s ? "on" : ""}" ${chipStyle(s)} aria-pressed="${c.estado === s}">${s}</button>`).join("")}
+          <button data-act="state" data-v="" title="Quitar el estado" ${c.estado === "Sin etiqueta" ? "disabled" : ""}>Sin estado</button></div>
+        <span class="sep"></span>
+        <details class="dd"><summary>Etiquetas ${ic("chevron", 1)}</summary><div class="ddm chips">
+          <div class="hint">Se aplica al tocar. Podés deshacerlo.</div>
+          ${EDIT_LABELS.map((l) => `<label class="lchk chip" ${chipStyle(l)}><input type="checkbox" data-lab="${l}" ${mine(l) ? "checked" : ""}>${l}</label>`).join("")}</div></details>
+        <details class="dd"><summary>Mover ${ic("chevron", 1)}</summary><div class="ddm">
+          ${lists.map((l) => l.id === c.listId ? `<div class="opt cur">${esc(l.name)} (actual)</div>` : `<button class="opt" data-act="move" data-v="${esc(l.id)}">${esc(l.name)}</button>`).join("")}</div></details>
       </div>
+      <div id="actMsg" class="status"></div>
       <div class="desc">${descView(c.desc) || "<i>Sin descripción</i>"}</div>
       <h3 class="ctitle">${ic("clip")} Adjuntos</h3>
       <div id="atts" class="atts"><p class="meta">Cargando adjuntos…</p></div>
@@ -798,8 +1010,17 @@
         <div class="mbtns" style="margin-top:6px"><span id="cmtMsg" class="status" style="flex:1"></span><button id="cmtSend" class="primary">Comentar</button></div></div>
       <div id="comments">${renderComments(c)}</div>`;
     $("drawer").classList.add("open");
-    $("close").onclick = () => $("drawer").classList.remove("open");
+    $("drawer").scrollTop = keepTop;
+    if (draft) $("cmtText").value = draft;
+    if (!same) $("drawer").querySelector("h2").focus({ preventScroll: true });
+    $("close").onclick = () => closeDrawer();
+    $("copyLink").onclick = async () => {
+      try { await navigator.clipboard.writeText(location.href); showToast("Link copiado. Quien lo abra ve esta tarjeta (tiene que estar conectado a Trello)."); }
+      catch (e) { showToast("No se pudo copiar. Copiá la dirección de la barra del navegador."); }
+    };
     $("drawer").querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => planAction(c, b.dataset.act, b.dataset.v)));
+    $("drawer").querySelectorAll("[data-lab]").forEach((cb) => (cb.onchange = () => planAction(c, "label", cb.dataset.lab, cb.checked)));
+    $("drawer").querySelectorAll(".abar details").forEach((d) => d.addEventListener("toggle", () => { if (d.open) $("drawer").querySelectorAll(".abar details").forEach((o) => o !== d && (o.open = false)); }));
     openCardId = c.id;
     attachMentions($("cmtText"));
     wireComments(c);
@@ -815,11 +1036,11 @@
     fetchActivity(c, true).then(() => {
       if (!$("drawer").classList.contains("open") || !$("comments")) return;
       $("comments").innerHTML = renderComments(c); wireComments(c);
-      const meta = $("drawer").querySelector("p.meta");
-      if (meta && c.creator) meta.innerHTML = `${esc(c.list)} · creada por <b>${esc(c.creator)}</b> el ${c.created.toLocaleString("es-AR")} · última actividad ${c.last ? c.last.toLocaleString("es-AR") : "—"}`;
+      if ($("dmeta") && openCardId === c.id) $("dmeta").innerHTML = dmeta(c);
     }).catch((e) => { if ($("comments")) $("comments").innerHTML = `<p class="meta">No se pudieron leer los comentarios: ${esc(errText(e))}</p>`; });
   }
 
+  const dmeta = (c) => `${c.creator ? `Creada por <b>${esc(c.creator)}</b> el ${c.created.toLocaleString("es-AR")}` : `Creada por: ${esc(who(c))}`} · última actividad ${c.last ? c.last.toLocaleString("es-AR") : "—"}`;
   async function postComment(c, text) {
     const btn = $("cmtSend");
     btn.disabled = true;
@@ -950,43 +1171,78 @@
   }
 
   // ---------- write actions ----------
-  function planAction(c, act, v) {
+  // State, labels and moves apply at once with "Deshacer" in a toast; archiving still asks first.
+  function planAction(c, act, v, checked) {
     const ops = [];
     let what = "";
     if (act === "state") {
-      if (v) ops.push({ action: "attach_label", labelId: LABELS[v], label: v });
+      if (v && !c.labelIds.includes(LABELS[v])) ops.push({ action: "attach_label", labelId: LABELS[v], label: v });
       STATE_LABELS.filter((s) => s !== v && c.labelIds.includes(LABELS[s])).forEach((s) => ops.push({ action: "detach_label", labelId: LABELS[s], label: s }));
-      if (v && c.labelIds.includes(LABELS[v])) ops.shift();
-      what = v ? `Poner el estado <b>${v}</b>` : "Quitar la etiqueta de estado";
-    } else if (act === "labels") {
-      $("drawer").querySelectorAll("[data-lab]").forEach((cb) => {
-        const l = cb.dataset.lab, had = c.labelIds.includes(LABELS[l]);
-        if (cb.checked && !had) ops.push({ action: "attach_label", labelId: LABELS[l], label: l });
-        if (!cb.checked && had) ops.push({ action: "detach_label", labelId: LABELS[l], label: l });
-      });
-      what = "Cambiar etiquetas";
+      what = v ? `Estado: <b>${v}</b>` : "Se quitó el estado";
+    } else if (act === "label") {
+      const had = c.labelIds.includes(LABELS[v]);
+      if (checked && !had) ops.push({ action: "attach_label", labelId: LABELS[v], label: v });
+      if (!checked && had) ops.push({ action: "detach_label", labelId: LABELS[v], label: v });
+      what = `${checked ? "Se agregó" : "Se quitó"} la etiqueta <b>${esc(v)}</b>`;
     } else if (act === "move") {
-      const to = $("moveTo").value;
-      if (to === c.listId) { $("actMsg").textContent = "La tarjeta ya está en esa lista."; return; }
-      ops.push({ action: "move", listId: to, label: (lists.find((l) => l.id === to) || {}).name });
-      what = "Mover la tarjeta";
+      if (v === c.listId) return;
+      const to = (lists.find((l) => l.id === v) || {}).name;
+      ops.push({ action: "move", listId: v, label: to, fromList: c.listId, fromPos: c.pos });
+      what = `Movida a <b>${esc(to)}</b>`;
     } else if (act === "archive") {
       ops.push({ action: "archive", label: "archivar" });
-      what = "<b>Archivar</b> la tarjeta (se puede desarchivar desde Trello › Menú › Archivados)";
+      confirmBox(`<h3>Archivar la tarjeta</h3><p class="meta">${esc(c.caseId)} · ${esc(c.title)}</p>${ownerNote(c)}<p class="meta">Desaparece del tablero para todos. Se puede desarchivar desde Trello › Menú › Archivados.</p>`,
+        () => runOps(c, ops, "Tarjeta archivada"), "Archivar");
+      return;
     }
-    if (!ops.length) { $("actMsg").textContent = "No hay cambios para aplicar."; return; }
-    const detail = ops.map((o) => o.action === "attach_label" ? `+ agregar ${o.label}` : o.action === "detach_label" ? `− quitar ${o.label}` : o.action === "move" ? `→ ${esc(o.label)}` : "archivar").join("<br>");
-    const owner = c.creator && me && c.creator === me.fullName ? "" : c.creator ? `<p class="warnTxt">Esta tarjeta la creó <b>${esc(c.creator)}</b>. Si no sos vos, hacelo solo con su OK.</p>` : (c.tester !== "—" ? `<p class="warnTxt">${ic("warn", 1)} Esta tarjeta parece ser de <b>${esc(c.tester)}</b>. Hacelo solo si tenés su OK.</p>` : "");
-    confirmBox(`<h3>${what}</h3><p class="meta">${esc(c.caseId)} · ${esc(c.title)}</p><p>${detail}</p>${owner}<p class="meta">Se cambia en Trello de verdad y lo ven todos los del tablero.</p>`,
-      () => runOps(c, ops));
+    if (!ops.length) return;
+    runOps(c, ops, what, true);
   }
+  function ownerNote(c, plain) {
+    const owner = c.creator || (c.tester !== "—" ? c.tester : "");
+    if (!owner || (me && owner === me.fullName)) return "";
+    return plain ? ` · es de ${esc(owner)}` : `<p class="warnTxt">${ic("warn", 1)} Esta tarjeta es de <b>${esc(owner)}</b>. Hacelo solo con su OK.</p>`;
+  }
+  const invert = (ops) => ops.slice().reverse().map((o) =>
+    o.action === "attach_label" ? { ...o, action: "detach_label" } :
+    o.action === "detach_label" ? { ...o, action: "attach_label" } :
+    { action: "move", listId: o.fromList, pos: o.fromPos, label: (lists.find((l) => l.id === o.fromList) || {}).name, fromList: o.listId, fromPos: "top" });
 
-  function confirmBox(html, onOk) {
+  // ---------- modal + toast ----------
+  let modalReturn = null;
+  const modalOpen = () => $("modal").classList.contains("open");
+  function openModal(html) {
     const m = $("modal");
-    m.innerHTML = `<div class="mbox">${html}<div class="mbtns"><button id="mNo">Cancelar</button><button id="mYes" class="primary">Confirmar</button></div></div>`;
+    if (!modalOpen()) modalReturn = document.activeElement;
+    m.innerHTML = html;
     m.classList.add("open");
-    $("mNo").onclick = () => m.classList.remove("open");
-    $("mYes").onclick = () => { m.classList.remove("open"); onOk(); };
+  }
+  function closeModal() {
+    $("modal").classList.remove("open");
+    if (modalReturn && document.contains(modalReturn)) modalReturn.focus({ preventScroll: true });
+    modalReturn = null;
+  }
+  // The new-card form asks before throwing away what was typed.
+  function dismissModal() {
+    if (newCardOpen() && newCardDirty() && !window.confirm("¿Descartar la tarjeta nueva? Se pierde lo que escribiste.")) return;
+    closeModal();
+  }
+  function confirmBox(html, onOk, okLabel) {
+    openModal(`<div class="mbox" role="dialog" aria-modal="true">${html}<div class="mbtns"><button id="mNo">Cancelar</button><button id="mYes" class="primary">${okLabel || "Confirmar"}</button></div></div>`);
+    $("mNo").onclick = closeModal;
+    $("mYes").onclick = () => { closeModal(); onOk(); };
+    $("mYes").focus();
+  }
+  let toastTimer = null;
+  function showToast(html, undo) {
+    const t = $("toast");
+    t.innerHTML = `<span class="tmsg">${html}</span>${undo ? `<button id="tUndo">Deshacer</button>` : ""}<button class="tx" id="tClose" aria-label="Cerrar aviso">${ic("x", 1)}</button>`;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    const hide = () => { t.hidden = true; clearTimeout(toastTimer); };
+    toastTimer = setTimeout(hide, undo ? 7000 : 4000);
+    $("tClose").onclick = hide;
+    if (undo) $("tUndo").onclick = () => { hide(); undo(); };
   }
 
   function writeErr(e) {
@@ -994,29 +1250,33 @@
     return errText(e);
   }
 
-  async function runOps(c, ops) {
+  async function runOps(c, ops, what, undoable) {
     const msg = $("actMsg");
-    $("drawer").querySelectorAll("button[data-act]").forEach((b) => (b.disabled = true));
-    msg.textContent = "Guardando en Trello…";
+    const bar = $("drawer").querySelector(".abar");
+    if (bar) bar.querySelectorAll("button, details").forEach((b) => (b.tagName === "DETAILS" ? b.classList.add("busy") : (b.disabled = true)));
+    if (msg) msg.textContent = "Guardando en Trello…";
     let done = 0;
     try {
       for (const o of ops) {
         if (!o.labelId && (o.action === "attach_label" || o.action === "detach_label")) throw { code: "http", message: `La etiqueta ${o.label} no existe en el tablero.` };
         if (o.action === "attach_label") await api("POST", `/cards/${c.id}/idLabels`, { value: o.labelId });
         else if (o.action === "detach_label") await api("DELETE", `/cards/${c.id}/idLabels/${o.labelId}`);
-        else if (o.action === "move") await api("PUT", `/cards/${c.id}`, { idList: o.listId, pos: "top" });
+        else if (o.action === "move") await api("PUT", `/cards/${c.id}`, { idList: o.listId, pos: o.pos ?? "top" });
         else if (o.action === "archive") await api("PUT", `/cards/${c.id}`, { closed: "true" });
         done++;
       }
-      msg.textContent = "✓ Guardado en Trello.";
       const touched = new Set([c.listId]);
       ops.forEach((o) => o.listId && touched.add(o.listId));
       await reloadLists([...touched]);
-      if (ops.some((o) => o.action === "archive")) $("drawer").classList.remove("open");
-      else openCard(c.id);
+      if (ops.some((o) => o.action === "archive")) closeDrawer();
+      else if (drawerOpen() && openCardId === c.id) openCard(c.id);
+      const undo = undoable ? () => { const cur = cards.find((x) => x.id === c.id); if (cur) runOps(cur, invert(ops), "Cambio deshecho"); } : null;
+      showToast(`${what} · ${esc(c.caseId)}${ownerNote(c, true)}`, undo);
     } catch (e) {
-      msg.innerHTML = (done ? `Se aplicaron ${done} de ${ops.length} cambios. ` : "") + esc(writeErr(e));
-      $("drawer").querySelectorAll("button[data-act]").forEach((b) => (b.disabled = false));
+      const m = $("actMsg") || msg;
+      if (m) m.innerHTML = (done ? `Se aplicaron ${done} de ${ops.length} cambios. ` : "") + esc(writeErr(e));
+      if (bar) bar.querySelectorAll("button, details").forEach((b) => (b.tagName === "DETAILS" ? b.classList.remove("busy") : (b.disabled = false)));
+      if (done) reloadLists([c.listId]);
     }
   }
 
@@ -1055,7 +1315,7 @@
 
   function openNewCard(presetList) {
     const m = $("modal");
-    m.innerHTML = `<div class="mbox wide">
+    openModal(`<div class="mbox wide" role="dialog" aria-modal="true" aria-label="Nueva tarjeta">
       <h3>Nueva tarjeta</h3>
       <div class="frow"><span class="fl">Caso</span><input type="text" id="ncCase" placeholder="PAY-12" style="width:130px">
         <span class="fl" style="width:auto">Tipo</span>
@@ -1072,8 +1332,8 @@
         <input type="file" id="ncFile" accept="image/*,video/*,.pdf,.txt,.log,.har,.json" multiple hidden><div id="ncFiles"></div></div>
       <div id="ncMsg" class="status"></div>
       <div class="mbtns"><button id="ncCancel">Cancelar</button><button id="ncCreate" class="primary">Revisar y crear</button></div>
-    </div>`;
-    m.classList.add("open");
+    </div>`);
+    setTimeout(() => $("ncCase") && $("ncCase").focus(), 0);
     pendingFiles = [];
     pendingCase = () => $("ncCase").value.trim();
     renderPending();
@@ -1090,12 +1350,12 @@
     };
     refreshTpl();
     if (presetList) $("ncList").value = presetList;
-    $("ncDesc").addEventListener("input", () => (touched = true));
+    $("ncDesc").addEventListener("input", () => { touched = true; $("ncDesc").dataset.touched = "1"; });
     m.querySelectorAll("input[name=ncTipo], input[name=ncPrio]").forEach((r) => r.addEventListener("change", () => { refreshTpl(); refreshPrev(); }));
     $("ncCase").addEventListener("input", () => { if (!$("ncList").value || $("ncList").dataset.auto) { const g = guessList($("ncCase").value.trim().toUpperCase()); if (g) { $("ncList").value = g; $("ncList").dataset.auto = "1"; } } refreshTpl(); refreshPrev(); });
     $("ncList").addEventListener("change", () => delete $("ncList").dataset.auto);
     $("ncTitle").addEventListener("input", refreshPrev);
-    $("ncCancel").onclick = () => m.classList.remove("open");
+    $("ncCancel").onclick = dismissModal;
     $("ncCreate").onclick = () => {
       const listId = $("ncList").value, title = $("ncTitle").value.trim();
       if (!listId) { $("ncMsg").textContent = "Elegí la lista."; return; }
@@ -1133,7 +1393,7 @@
     }
     pendingFiles = [];
     await reloadLists([d.listId]);
-    $("modal").classList.remove("open");
+    closeModal();
     openCard(card.id);
     if ($("actMsg")) $("actMsg").textContent = files.length && ok < files.length
       ? `✓ Tarjeta creada, pero se subieron ${ok} de ${files.length} adjuntos. Subí los que faltan abajo, en Adjuntos.`
@@ -1231,10 +1491,9 @@
     });
   }
   function showImage(src, href) {
-    const m = $("modal");
-    m.innerHTML = `<div class="mbox wide" style="text-align:center"><img id="lbImg" alt="" style="max-width:100%;max-height:76vh;border-radius:8px"><div class="mbtns"><a href="${esc(href)}" target="_blank" rel="noopener" style="margin-right:auto;color:var(--accent)">Abrir en Trello ↗</a><button id="lbClose">Cerrar</button></div></div>`;
-    m.classList.add("open");
-    $("lbClose").onclick = () => m.classList.remove("open");
+    openModal(`<div class="mbox wide" style="text-align:center" role="dialog" aria-modal="true"><img id="lbImg" alt="" style="max-width:100%;max-height:76vh;border-radius:8px"><div class="mbtns"><a href="${esc(href)}" target="_blank" rel="noopener" style="margin-right:auto;color:var(--accent)">Abrir en Trello ${ic("ext", 1)}</a><button id="lbClose">Cerrar</button></div></div>`);
+    $("lbClose").onclick = closeModal;
+    $("lbClose").focus();
     imgUrl(src).then((u) => { if ($("lbImg")) $("lbImg").src = u; }).catch(() => { const el = $("lbImg"); if (el) { el.dataset.href = href; imgFallback(el); } });
   }
   async function loadAttachments(c) {
@@ -1298,6 +1557,7 @@
   }
   const filesOf = (dt) => dt ? [...(dt.files || [])].concat(dt.files && dt.files.length ? [] : [...(dt.items || [])].filter((it) => it.kind === "file").map((it) => it.getAsFile())).filter(Boolean) : [];
   const newCardOpen = () => $("modal").classList.contains("open") && !!$("ncFiles");
+  const newCardDirty = () => !!($("ncTitle") && ($("ncTitle").value.trim() || $("ncCase").value.trim() || $("ncDesc").dataset.touched)) || pendingFiles.length > 0;
   document.addEventListener("paste", (e) => {
     const files = filesOf(e.clipboardData);
     if (!files.length) return;
@@ -1330,23 +1590,29 @@
     arr.forEach((c) => {
       const a = activityCache.get(c.id);
       if (!a) return;
-      if (c.last && a.seenLast && c.last > a.seenLast) Object.assign(c, { creator: a.creator, created: a.created });
+      if (c.last && a.seenLast && c.last > a.seenLast) Object.assign(c, { creator: a.creator, created: a.created, labelAdded: a.labelAdded });
       else Object.assign(c, a);
     });
     return arr;
   }
+  const emptyAct = () => ({ creator: null, created: null, comments: [], labelAdded: {} });
   // Collect creator + comments from Trello actions, grouped by card id.
   function collect(byCard, a) {
     const id = a.data && a.data.card && a.data.card.id;
     if (!id) return;
-    if (!byCard.has(id)) byCard.set(id, { creator: null, created: null, comments: [] });
+    if (!byCard.has(id)) byCard.set(id, emptyAct());
     const d = byCard.get(id);
     const who = (a.memberCreator && a.memberCreator.fullName) || "?";
     if (a.type === "commentCard") d.comments.push({ id: a.id, authorId: a.idMemberCreator, author: who, date: new Date(a.date), text: (a.data && a.data.text) || "", edited: !!(a.data && a.data.dateLastEdited) });
+    else if (a.type === "addLabelToCard") {
+      // Latest time each label was added (used for "days in Rechequear" and "moved to FIXED this week").
+      const ln = String((a.data && a.data.label && a.data.label.name) || "").toUpperCase(), t = new Date(a.date);
+      if (ln && (!d.labelAdded[ln] || t > d.labelAdded[ln])) d.labelAdded[ln] = t;
+    }
     else { d.creator = who; d.created = new Date(a.date); }
   }
   function applyActivity(c, d) {
-    const data = { creator: d.creator, created: d.created, comments: d.comments.sort((x, y) => y.date - x.date), seenLast: c.last || null };
+    const data = { creator: d.creator, created: d.created, comments: d.comments.sort((x, y) => y.date - x.date), labelAdded: d.labelAdded || {}, seenLast: c.last || null };
     activityCache.set(c.id, data);
     Object.assign(c, data);
     cards.filter((x) => x.id === c.id && x !== c).forEach((x) => Object.assign(x, data));
@@ -1356,7 +1622,7 @@
     const acts = await api("GET", `/cards/${c.id}/actions`, { filter: ACT_FILTER, limit: 1000, memberCreator_fields: "fullName,username" });
     const byCard = new Map();
     (acts || []).forEach((a) => collect(byCard, a));
-    return applyActivity(c, byCard.get(c.id) || { creator: null, created: null, comments: [] });
+    return applyActivity(c, byCard.get(c.id) || emptyAct());
   }
   let activityRun = 0;
   // Whole board history in 1-2 calls (1000 actions per page), instead of one call per card.
@@ -1364,6 +1630,7 @@
     const run = ++activityRun;
     const byCard = new Map();
     let before = null, pages = 0;
+    statusBusy = true;
     try {
       do {
         const params = { filter: ACT_FILTER, limit: 1000, memberCreator_fields: "fullName,username" };
@@ -1375,6 +1642,7 @@
         $("status").textContent = `${cards.length} tarjetas · leyendo historial (${pages})…`;
       } while (before && pages < 20 && run === activityRun);
     } catch (e) {
+      statusBusy = false;
       if (run !== activityRun) return;
       if (e && e.code === "unauthorized") return authFailed();
       showBanner(`No se pudieron cargar autores y comentarios: ${esc(errText(e))} <button id="resumeAct">Reintentar</button>`, "warn");
@@ -1382,8 +1650,12 @@
       updateStatus();
       return;
     }
+    statusBusy = false;
     if (run !== activityRun) return;
-    cards.forEach((c) => applyActivity(c, byCard.get(c.id) || { creator: null, created: null, comments: [] }));
+    cards.forEach((c) => applyActivity(c, byCard.get(c.id) || emptyAct()));
+    const weekAgo = Date.now() - 7 * 86400000;
+    weekStats = { created: 0, fixed: 0 };
+    byCard.forEach((d) => { if (d.created && d.created >= weekAgo) weekStats.created++; if (d.labelAdded.FIXED && d.labelAdded.FIXED >= weekAgo) weekStats.fixed++; });
     fillFilters();
     render();
     updateStatus();
@@ -1406,26 +1678,86 @@
   }
 
   // ---------- events ----------
-  $("main").addEventListener("click", (e) => {
-    const th = e.target.closest("th[data-sort]");
-    if (th) { const k = th.dataset.sort; sort = { key: k, dir: sort.key === k ? -sort.dir : 1 }; render(); return; }
-    const lr = e.target.closest("tr[data-list]");
-    if (lr) { $("fLista").value = lr.dataset.list; saveFilters(); location.hash = "tabla"; return; }
-    const kf = e.target.closest("[data-f]");
-    if (kf) { if (!kf.disabled) applyFilters(JSON.parse(kf.dataset.f)); return; }
-    const nl = e.target.closest("[data-newlist]");
-    if (nl) { if (lists.length) openNewCard(nl.dataset.newlist); return; }
-    const r = e.target.closest("[data-id]");
-    if (r) openCard(r.dataset.id);
+  function activate(el) {
+    if (el.matches("th[data-sort]")) { const k = el.dataset.sort; sort = { key: k, dir: sort.key === k ? -sort.dir : 1 }; render(); return true; }
+    if (el.matches("tr[data-list]")) { fsel.fLista = new Set([el.dataset.list]); renderFdds(); saveFilters(); location.hash = "tabla"; return true; }
+    if (el.matches("[data-f]")) { if (!el.disabled) applyFilters(JSON.parse(el.dataset.f)); return true; }
+    if (el.matches("[data-clear]")) { applyFilters({}, true); return true; }
+    if (el.matches("[data-newlist]")) { if (lists.length) openNewCard(el.dataset.newlist); return true; }
+    if (el.matches("[data-id]")) { openCard(el.dataset.id); return true; }
+    return false;
+  }
+  const ACTIVATABLE = "th[data-sort], tr[data-list], [data-f], [data-clear], [data-newlist], [data-id]";
+  $("main").addEventListener("click", (e) => { const el = e.target.closest(ACTIVATABLE); if (el) activate(el); });
+  // Rows and cards are focusable: Enter / Space open them like a click.
+  $("main").addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches("tr.row, .tcard") && activate(e.target)) e.preventDefault();
   });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("drawer").classList.remove("open"); });
-  ["q", "fTipo", "fPrio", "fEstado", "fTester", "fLista", "hideIdx"].forEach((id) => $(id).addEventListener("input", () => { saveFilters(); render(); }));
-  $("clearF").onclick = () => applyFilters({});
-  document.addEventListener("click", (e) => { if ($("userMenu").open && !$("userMenu").contains(e.target)) $("userMenu").open = false; });
+
+  // Filters: multi-select dropdowns, quick presets, clear.
+  $("fdds").addEventListener("change", (e) => {
+    const d = e.target.closest("details[data-k]"); if (!d) return;
+    const k = d.dataset.k;
+    if (e.target.checked) fsel[k].add(e.target.value); else fsel[k].delete(e.target.value);
+    d.classList.toggle("on", fsel[k].size > 0);
+    d.querySelector(".fs").innerHTML = fSummary(k);
+    d.querySelector(".fclr").hidden = !fsel[k].size;
+    saveFilters(); render();
+  });
+  $("fdds").addEventListener("click", (e) => {
+    const b = e.target.closest(".fclr"); if (!b) return;
+    fsel[b.dataset.k].clear(); renderFdds(); saveFilters(); render();
+  });
+  $("fdds").addEventListener("toggle", (e) => { if (e.target.open) $("fdds").querySelectorAll("details[open]").forEach((o) => o !== e.target && (o.open = false)); }, true);
+  $("quick").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-quick]"); if (!b || b.disabled) return;
+    const preset = QUICK[+b.dataset.quick][1]();
+    applyFilters(presetActive(preset) ? {} : preset, true);
+  });
+  ["q", "hideIdx"].forEach((id) => $(id).addEventListener("input", () => { saveFilters(); render(); }));
+  $("clearF").onclick = () => applyFilters({}, true);
+
+  // Click outside closes any open dropdown / menu.
+  document.addEventListener("click", (e) => {
+    document.querySelectorAll("details.menu[open], details.fdd[open], details.dd[open]").forEach((d) => { if (!d.contains(e.target)) d.open = false; });
+  });
+  // Click on the dark backdrop closes the window (asks first if the new card has content).
+  $("modal").addEventListener("mousedown", (e) => { if (e.target === $("modal")) dismissModal(); });
+
+  // Esc closes the topmost thing: a dropdown, then a window, then the card panel. "/" jumps to search.
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const dd = document.querySelector("details.menu[open], details.fdd[open], details.dd[open]");
+      if (dd) { dd.open = false; dd.querySelector("summary").focus(); return; }
+      if (modalOpen()) { dismissModal(); return; }
+      if (drawerOpen()) { closeDrawer(); return; }
+      if (!$("toast").hidden) $("toast").hidden = true;
+      return;
+    }
+    const typing = e.target.closest("input, textarea, select, [contenteditable]");
+    if (e.key === "/" && !typing && !e.ctrlKey && !e.metaKey && !modalOpen()) {
+      e.preventDefault();
+      if (currentView() === "resumen") location.hash = "tabla";
+      $("q").focus(); $("q").select();
+    }
+  });
+
+  // The URL drives the view and the open card (Back closes the card, a shared link opens it).
+  function syncCardFromHash() {
+    const k = route().card;
+    if (!k) { if (drawerOpen()) closeDrawer(true); return; }
+    const c = findCard(k);
+    if (c && !(drawerOpen() && openCardId === c.id)) openCard(c.id, { fromHash: true });
+  }
+  window.addEventListener("hashchange", () => {
+    if (modalOpen() && !newCardOpen()) closeModal();
+    render();
+    syncCardFromHash();
+  });
   $("refresh").onclick = () => load(true);
   $("newCard").onclick = () => { if (lists.length) openNewCard(); };
   $("auto").onchange = schedule;
-  window.addEventListener("hashchange", render);
+  fillFilters(); // restores the saved filters before the first render
   render();
 
   // ---------- auth + boot ----------
