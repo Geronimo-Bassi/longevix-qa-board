@@ -49,6 +49,19 @@
   .p-P1 { background: var(--p1); } .p-P2 { background: var(--p2); } .p-P3 { background: var(--p3); }
   .s-Reportado { background: var(--rep); } .s-Rechequear { background: var(--rech); } .s-FIXED { background: var(--fixed); } .s-Sin { background: transparent; color: var(--muted); border: 1px solid var(--line); }
   .count { color: var(--muted); font-size: 13px; padding: 4px 0 10px; }
+  .tboard { display: flex; gap: 12px; overflow-x: auto; align-items: flex-start; padding-bottom: 12px; min-height: 60vh; }
+  .tlist { flex: 0 0 272px; background: var(--chip); border: 1px solid var(--line); border-radius: 12px; padding: 8px; max-height: calc(100vh - 230px); display: flex; flex-direction: column; }
+  .tlist h3 { margin: 2px 4px 8px; font-size: 13.5px; font-weight: 650; display: flex; justify-content: space-between; gap: 8px; }
+  .tlist h3 .status { font-weight: 400; }
+  .tcards { overflow-y: auto; flex: 1; padding: 0 2px; }
+  .tcard { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; margin-bottom: 8px; cursor: pointer; box-shadow: 0 1px 1px rgba(0,0,0,.08); }
+  .tcard:hover { border-color: var(--accent); }
+  .tcard .lbls { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 5px; }
+  .tcard .lbl { height: 8px; min-width: 40px; border-radius: 4px; }
+  .tcard .n { font-size: 13.5px; word-wrap: break-word; }
+  .tcard .badges { display: flex; gap: 10px; color: var(--muted); font-size: 12px; margin-top: 5px; }
+  .tadd { text-align: left; border: none; background: transparent; color: var(--muted); padding: 6px; width: 100%; }
+  .tadd:hover { background: var(--line); color: var(--text); }
   .board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(260px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
   .col { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px; min-height: 120px; }
   .col h3 { margin: 0 0 8px; font-size: 14px; display: flex; justify-content: space-between; }
@@ -124,6 +137,7 @@
 <div class="progress"><div id="bar"></div></div>
 <div id="banner"></div>
 <nav class="tabs">
+  <a href="#tablero" data-view="tablero">Tablero</a>
   <a href="#tabla" data-view="tabla">Tabla</a>
   <a href="#estado" data-view="estado">Por estado</a>
   <a href="#listas" data-view="listas">Por lista</a>
@@ -154,7 +168,7 @@
   const ESTADOS = ["Rechequear", "Reportado", "FIXED", "Sin etiqueta"];
   const PRIOS = ["P1", "P2", "P3", "—"];
   const LABELS = {}; // label name -> id, filled from the board's labels
-  const CARD_FIELDS = "name,desc,idList,labels,shortUrl,dateLastActivity,closed";
+  const CARD_FIELDS = "name,desc,idList,labels,shortUrl,dateLastActivity,closed,pos";
   const ACT_FILTER = "createCard,copyCard,convertToCardFromCheckItem,commentCard";
   const STATE_LABELS = ["FIXED", "Rechequear", "Reportado"];
   const EDIT_LABELS = ["BUG", "MEJORA", "DUDA", "BLOQUEADO", "PARCIAL", "P1", "P2", "P3"];
@@ -179,7 +193,7 @@
   function mapCard(c) {
     const l = lists.find((x) => x.id === c.idList);
     return { id: c.id, name: c.name, desc: c.desc, url: c.shortUrl, closed: c.closed, labels: c.labels || [],
-      list: { id: c.idList, name: l ? l.name : "" }, lastActivityAt: c.dateLastActivity };
+      list: { id: c.idList, name: l ? l.name : "" }, lastActivityAt: c.dateLastActivity, pos: c.pos };
   }
   function setLabels(labs) {
     for (const k in LABELS) delete LABELS[k];
@@ -231,6 +245,8 @@
       tipo, extra, prio, estado, tester,
       labels: (c.labels || []).map((l) => l.name),
       last: c.lastActivityAt ? new Date(c.lastActivityAt) : null,
+      pos: c.pos || 0,
+      labelObjs: (c.labels || []).map((l) => ({ name: l.name, color: l.color })),
     };
   }
 
@@ -382,7 +398,7 @@
   const tagEstado = (c) => `<span class="tag s-${c.estado === "Sin etiqueta" ? "Sin" : c.estado}">${esc(c.estado)}</span>`;
   const fmtDate = (d) => d ? d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) : "";
 
-  function currentView() { const h = location.hash.replace("#", ""); return ["tabla", "estado", "listas", "resumen"].includes(h) ? h : "tabla"; }
+  function currentView() { const h = location.hash.replace("#", ""); return ["tablero", "tabla", "estado", "listas", "resumen"].includes(h) ? h : "tabla"; }
 
   function render() {
     const v = currentView();
@@ -391,6 +407,7 @@
     if (!lastLoaded) return;
     const rows = filtered();
     if (v === "tabla") renderTable(rows);
+    else if (v === "tablero") renderTrello(rows);
     else if (v === "estado") renderBoard(rows);
     else if (v === "listas") renderMatrix(rows);
     else renderSummary();
@@ -408,6 +425,23 @@
         <td class="case">${esc(c.caseId)}</td><td class="title">${esc(c.title)}</td><td>${tagTipo(c)}</td><td>${tagPrio(c)}</td>
         <td>${tagEstado(c)}</td><td>${esc(who(c))}</td><td class="date">${c.comments ? (c.comments.length || "") : "…"}</td><td class="list">${esc(c.listShort)}</td><td class="date">${fmtDate(c.last)}</td></tr>`).join("") +
       `</tbody></table><p class="status">"Creada por" sale del historial de Trello. Si dice "(est.)", todavía no se cargó y es una estimación según la cuenta usada en la descripción.</p>` : `<div class="empty">Ninguna tarjeta con estos filtros.</div>`);
+  }
+
+  // Trello-like view: one column per list, cards in the same order as in Trello.
+  const LCOLORS = { green: "#4bce97", yellow: "#f5cd47", orange: "#fea362", red: "#f87168", purple: "#9f8fef", blue: "#579dff", sky: "#6cc3e0", lime: "#94c748", pink: "#e774bb", black: "#8590a2" };
+  const lcolor = (c) => LCOLORS[String(c || "").replace(/_(dark|light)$/, "")] || "#8590a2";
+  function renderTrello(rows) {
+    const listF = $("fLista").value;
+    const shown = lists.filter((l) => !listF || l.name === listF);
+    $("main").innerHTML = `<div class="tboard">` + shown.map((l) => {
+      const cs = rows.filter((c) => c.listId === l.id).sort((a, b) => a.pos - b.pos);
+      return `<div class="tlist"><h3><span>${esc(l.name)}</span><span class="status">${cs.length}</span></h3><div class="tcards">` +
+        cs.map((c) => `<div class="tcard" data-id="${esc(c.id)}">` +
+          (c.labelObjs.length ? `<div class="lbls">${c.labelObjs.map((x) => `<span class="lbl" style="background:${lcolor(x.color)}" title="${esc(x.name)}"></span>`).join("")}</div>` : "") +
+          `<div class="n">${esc(c.name)}</div>` +
+          `<div class="badges">${c.desc ? "<span>≡</span>" : ""}${c.comments && c.comments.length ? `<span>💬 ${c.comments.length}</span>` : ""}${who(c) !== "—" ? `<span>${esc(who(c))}</span>` : ""}</div></div>`).join("") +
+        `</div><button class="tadd" data-newlist="${esc(l.id)}">＋ Añadí una tarjeta</button></div>`;
+    }).join("") + `</div>`;
   }
 
   function renderBoard(rows) {
@@ -752,7 +786,7 @@
     }).filter((x) => x.score >= 3).sort((a, b) => b.score - a.score).slice(0, 5).map((x) => x.c);
   }
 
-  function openNewCard() {
+  function openNewCard(presetList) {
     const m = $("modal");
     m.innerHTML = `<div class="mbox wide">
       <h3>➕ Nueva tarjeta</h3>
@@ -782,6 +816,7 @@
       $("ncDups").innerHTML = d.length ? `<div class="dups">⚠ Posibles duplicados (revisalos antes de crear):<br>${d.map((c) => `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}</a>`).join("<br>")}</div>` : "";
     };
     refreshTpl();
+    if (presetList) $("ncList").value = presetList;
     $("ncDesc").addEventListener("input", () => (touched = true));
     m.querySelectorAll("input[name=ncTipo], input[name=ncPrio]").forEach((r) => r.addEventListener("change", () => { refreshTpl(); refreshPrev(); }));
     $("ncCase").addEventListener("input", () => { if (!$("ncList").value || $("ncList").dataset.auto) { const g = guessList($("ncCase").value.trim().toUpperCase()); if (g) { $("ncList").value = g; $("ncList").dataset.auto = "1"; } } refreshTpl(); refreshPrev(); });
@@ -909,6 +944,8 @@
     if (th) { const k = th.dataset.sort; sort = { key: k, dir: sort.key === k ? -sort.dir : 1 }; render(); return; }
     const lr = e.target.closest("tr[data-list]");
     if (lr) { $("fLista").value = lr.dataset.list; saveFilters(); location.hash = "tabla"; return; }
+    const nl = e.target.closest("[data-newlist]");
+    if (nl) { if (lists.length) openNewCard(nl.dataset.newlist); return; }
     const r = e.target.closest("[data-id]");
     if (r) openCard(r.dataset.id);
   });
