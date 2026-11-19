@@ -150,6 +150,10 @@
   .tlist h3 { margin: 2px 4px 8px; font-size: 13.5px; font-weight: 650; display: flex; justify-content: space-between; gap: 8px; }
   .tlist h3 .status { font-weight: 400; }
   .tcards { overflow-y: auto; flex: 1; padding: 0 2px; }
+  .tag.archtag { --c: var(--indice); font-weight: 600; }
+  .tcard.isarch, tr.isarch td { opacity: .62; }
+  .tcard.isarch:hover, tr.isarch:hover td { opacity: 1; }
+  .archnote { border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
   .tcard { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; margin-bottom: 8px; cursor: pointer; box-shadow: var(--shadow); }
   .tcard:hover { border-color: var(--accent); }
   .tcard .lbls { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 5px; }
@@ -426,6 +430,7 @@
   <input type="search" id="q" placeholder="Buscar… (tecla /)" title="Busca en el caso, el título y la descripción" aria-label="Buscar (atajo: /)">
   <div class="fdds" id="fdds"></div>
   <label class="chk"><input type="checkbox" id="hideIdx" checked> Ocultar Pendientes / Resumen</label>
+  <label class="chk" title="Suma las tarjetas archivadas del tablero, marcadas como Archivada"><input type="checkbox" id="showArch"> Ver archivadas</label>
   <button id="clearF" hidden></button>
 </div>
 <main id="main"></main>
@@ -458,6 +463,9 @@
   let openCardId = null;
   let me = null;
   let cards = [];
+  let archived = []; // archived cards, loaded only when "Ver archivadas" is on
+  let allLists = []; // open + archived lists (names for archived cards)
+  let archLoaded = false, lastByCard = null, archBusy = null;
   let lists = [];
   let lastLoaded = null;
   let loading = false;
@@ -473,7 +481,7 @@
   // ---------- data helpers ----------
   // REST card -> the shape classify() expects
   function mapCard(c) {
-    const l = lists.find((x) => x.id === c.idList);
+    const l = lists.find((x) => x.id === c.idList) || allLists.find((x) => x.id === c.idList);
     return { id: c.id, name: c.name, desc: c.desc, url: c.shortUrl, closed: c.closed, labels: c.labels || [],
       list: { id: c.idList, name: l ? l.name : "" }, lastActivityAt: c.dateLastActivity, pos: c.pos,
       cover: (c.attachments || []).find((a) => a.id === c.idAttachmentCover && a.isUpload && isImg(a)) || null };
@@ -619,6 +627,8 @@
       setTimeout(loadAllActivity, 0);
       if (!members.length) loadMembers();
       loadNotifs();
+      archLoaded = false;
+      if ($("showArch").checked) loadArchived();
       fillFilters();
       render();
       syncCardFromHash();
@@ -698,7 +708,7 @@
   function filtered() {
     const q = $("q").value.trim().toLowerCase();
     const S = fsel, hide = $("hideIdx").checked;
-    return cards.filter((c) =>
+    return ($("showArch").checked ? cards.concat(archived) : cards).filter((c) =>
       (!hide || c.tipo !== "Índice") &&
       (!S.fTipo.size || S.fTipo.has(c.tipo) || c.extra.some((x) => S.fTipo.has(x))) &&
       (!S.fPrio.size || S.fPrio.has(c.prio)) &&
@@ -754,7 +764,7 @@
   }
   const currentView = () => route().view;
   const cardKey = (c) => ((c.url || "").match(/\/c\/([\w-]+)/) || [])[1] || c.id;
-  const findCard = (k) => cards.find((c) => cardKey(c) === k || c.id === k);
+  const findCard = (k) => cards.find((c) => cardKey(c) === k || c.id === k) || archived.find((c) => cardKey(c) === k || c.id === k);
 
   // Re-rendering replaces the view's HTML: keep the scroll of the board, its lists and the page.
   function saveScroll() {
@@ -807,8 +817,8 @@
     const th = (k, l) => `<th data-sort="${k}">${l}${sort.key === k ? (sort.dir > 0 ? " ▲" : " ▼") : ""}</th>`;
     $("main").innerHTML = `<div class="count">${rows.length} tarjetas</div>` + (rows.length ? `<table class="cards"><thead><tr>
       ${th("caseId", "Caso")}${th("title", "Título")}${th("tipo", "Tipo")}${th("prio", "Prio")}${th("estado", "Estado")}${th("who", "Creada por")}${th("ncom", ic("chat", 1))}${th("list", "Lista")}${th("last", "Actividad")}
-      </tr></thead><tbody>` + rows.map((c) => `<tr class="row" tabindex="0" data-id="${esc(c.id)}">
-        <td class="case">${esc(c.caseId)}</td><td class="title">${esc(c.title)}</td><td>${tagTipo(c)}</td><td>${tagPrio(c)}</td>
+      </tr></thead><tbody>` + rows.map((c) => `<tr class="row${c.archived ? " isarch" : ""}" tabindex="0" data-id="${esc(c.id)}">
+        <td class="case">${esc(c.caseId)}</td><td class="title">${c.archived ? `<span class="tag archtag">Archivada</span> ` : ""}${esc(c.title)}</td><td>${tagTipo(c)}</td><td>${tagPrio(c)}</td>
         <td>${tagEstado(c)}</td><td class="who">${esc(who(c))}</td><td class="ncom">${c.comments ? (c.comments.length ? ic("chat", 1) + " " + c.comments.length : "") : "…"}</td><td class="list">${esc(c.listShort)}</td><td class="date">${fmtDate(c.last)}</td></tr>`).join("") +
       `</tbody></table><p class="status">"Creada por" sale del historial de Trello. Si dice "(est.)", todavía no se cargó y es una estimación según la cuenta usada en la descripción.</p>` : emptyState());
   }
@@ -823,7 +833,8 @@
     $("main").innerHTML = `<div class="tboard">` + shown.map((l) => {
       const cs = rows.filter((c) => c.listId === l.id).sort((a, b) => a.pos - b.pos);
       return `<div class="tlist"><h3><span>${esc(l.name)}</span><span class="status">${cs.length}</span></h3><div class="tcards" data-k="${esc(l.id)}">` +
-        cs.map((c) => `<div class="tcard" tabindex="0" data-id="${esc(c.id)}">` +
+        cs.map((c) => `<div class="tcard${c.archived ? " isarch" : ""}" tabindex="0" data-id="${esc(c.id)}">` +
+          (c.archived ? `<span class="tag archtag">Archivada</span>` : "") +
           (c.cover ? `<img class="tcover" alt="" data-src="${esc(pickPreview(c.cover, 300))}" data-href="${esc(c.url)}">` : "") +
           (c.labelObjs.length ? `<div class="lbls">${c.labelObjs.map((x) => `<span class="lbl" style="background:${lcolor(x.color)}" title="${esc(x.name)}"></span>`).join("")}</div>` : "") +
           `<div class="n">${esc(c.name)}</div><div class="badges">${cardFoot(c)}</div></div>`).join("") +
@@ -963,7 +974,7 @@
   }
   function openCard(id, opts) {
     opts = opts || {};
-    const c = cards.find((x) => x.id === id);
+    const c = cards.find((x) => x.id === id) || archived.find((x) => x.id === id);
     if (!c) return;
     const same = drawerOpen() && openCardId === c.id;
     const draft = same && $("cmtText") ? $("cmtText").value : "";
@@ -979,12 +990,13 @@
     $("drawer").innerHTML = `<div class="dtop"><span class="case">${esc(c.caseId)}</span> · <span>${esc(c.list)}</span><span class="grow"></span>
         <button id="copyLink" class="iconbtn" title="Copiar link a esta tarjeta" aria-label="Copiar link">${ic("link")}</button>
         <a class="iconbtn" href="${esc(c.url)}" target="_blank" rel="noopener" title="Abrir en Trello" aria-label="Abrir en Trello">${ic("ext")}</a>
-        <button data-act="archive" class="iconbtn arch" title="Archivar tarjeta" aria-label="Archivar tarjeta">${ic("archive")}</button>
+        ${c.archived ? "" : `<button data-act="archive" class="iconbtn arch" title="Archivar tarjeta" aria-label="Archivar tarjeta">${ic("archive")}</button>`}
         <button id="close" class="iconbtn" aria-label="Cerrar" title="Cerrar (Esc)">${ic("x")}</button></div>
       <h2 tabindex="-1">${esc(c.title || c.name)}</h2>
       <div>${tagTipo(c)}${tagPrio(c)}${tagEstado(c)}</div>
       <p class="meta" id="dmeta">${dmeta(c)}</p>
-      <div class="abar">
+      ${c.archived ? `<div class="archnote">${ic("archive", 1)} Esta tarjeta está archivada${allLists.some((l) => l.id === c.listId && l.closed) ? " (y su lista también)" : ""}. Para cambiarla, primero desarchivala. <button data-act="unarchive" class="primary">Desarchivar</button></div>` : ""}
+      <div class="abar"${c.archived ? " hidden" : ""}>
         <div class="arow" role="group" aria-label="Estado">
           ${STATE_LABELS.map((s) => `<button data-act="state" data-v="${s}" class="st ${c.estado === s ? "on" : ""}" ${chipStyle(s)} aria-pressed="${c.estado === s}">${s}</button>`).join("")}
           <button data-act="state" data-v="" title="Quitar el estado" ${c.estado === "Sin etiqueta" ? "disabled" : ""}>Sin estado</button></div>
@@ -1186,6 +1198,11 @@
       const to = (lists.find((l) => l.id === v) || {}).name;
       ops.push({ action: "move", listId: v, label: to, fromList: c.listId, fromPos: c.pos });
       what = `Movida a <b>${esc(to)}</b>`;
+    } else if (act === "unarchive") {
+      ops.push({ action: "unarchive", label: "desarchivar" });
+      confirmBox(`<h3>Desarchivar la tarjeta</h3><p class="meta">${esc(c.caseId)} · ${esc(c.title)}</p>${ownerNote(c)}<p class="meta">Vuelve a aparecer en el tablero para todos, en la lista «${esc(c.list)}».</p>`,
+        () => runOps(c, ops, "Tarjeta desarchivada"), "Desarchivar");
+      return;
     } else if (act === "archive") {
       ops.push({ action: "archive", label: "archivar" });
       confirmBox(`<h3>Archivar la tarjeta</h3><p class="meta">${esc(c.caseId)} · ${esc(c.title)}</p>${ownerNote(c)}<p class="meta">Desaparece del tablero para todos. Se puede desarchivar desde Trello › Menú › Archivados.</p>`,
@@ -1260,11 +1277,15 @@
         else if (o.action === "detach_label") await api("DELETE", `/cards/${c.id}/idLabels/${o.labelId}`);
         else if (o.action === "move") await api("PUT", `/cards/${c.id}`, { idList: o.listId, pos: o.pos ?? "top" });
         else if (o.action === "archive") await api("PUT", `/cards/${c.id}`, { closed: "true" });
+        else if (o.action === "unarchive") await api("PUT", `/cards/${c.id}`, { closed: "false" });
         done++;
       }
       const touched = new Set([c.listId]);
       ops.forEach((o) => o.listId && touched.add(o.listId));
+      if (ops.some((o) => o.action === "unarchive")) archived = archived.filter((x) => x.id !== c.id);
       await reloadLists([...touched]);
+      if (ops.some((o) => o.action === "archive" || o.action === "unarchive")) archLoaded = false;
+      if ($("showArch").checked && !archLoaded) loadArchived();
       if (ops.some((o) => o.action === "archive")) closeDrawer();
       else if (drawerOpen() && openCardId === c.id) openCard(c.id);
       const undo = undoable ? () => { const cur = cards.find((x) => x.id === c.id); if (cur) runOps(cur, invert(ops), "Cambio deshecho"); } : null;
@@ -1660,7 +1681,8 @@
     }
     statusBusy = false;
     if (run !== activityRun) return;
-    cards.forEach((c) => applyActivity(c, byCard.get(c.id) || emptyAct()));
+    lastByCard = byCard;
+    cards.concat(archived).forEach((c) => applyActivity(c, byCard.get(c.id) || emptyAct()));
     const weekAgo = Date.now() - 7 * 86400000;
     weekStats = { created: 0, fixed: 0 };
     byCard.forEach((d) => { if (d.created && d.created >= weekAgo) weekStats.created++; if (d.labelAdded.FIXED && d.labelAdded.FIXED >= weekAgo) weekStats.fixed++; });
@@ -1764,6 +1786,38 @@
   render();
 
   // ---------- auth + boot ----------
+  // ---------- archived cards (loaded only when "Ver archivadas" is on) ----------
+  function loadArchived(force) {
+    if (archBusy) return archBusy;
+    if (archLoaded && !force) return Promise.resolve();
+    archBusy = (async () => {
+      try {
+        const [als, cs] = await Promise.all([
+          api("GET", `/boards/${BOARD_ID}/lists`, { filter: "all", fields: "name,closed" }),
+          api("GET", `/boards/${BOARD_ID}/cards/closed`, { fields: CARD_FIELDS, ...COVER_Q })
+            .catch((e) => e && e.status === 400 ? api("GET", `/boards/${BOARD_ID}/cards/closed`, { fields: CARD_FIELDS }) : Promise.reject(e)),
+        ]);
+        allLists = als || [];
+        const order = new Map(lists.map((l, i) => [l.name, i]));
+        archived = keepActivity((cs || []).map(mapCard).map((c) => Object.assign(classify(c), { archived: true })));
+        archived.forEach((c) => {
+          c.listOrder = order.has(c.list) ? order.get(c.list) : 999;
+          if (!c.comments && lastByCard) applyActivity(c, lastByCard.get(c.id) || emptyAct());
+        });
+        archLoaded = true;
+        render();
+      } catch (e) {
+        showToast("No se pudieron leer las tarjetas archivadas: " + esc(errText(e)));
+      } finally { archBusy = null; }
+    })();
+    return archBusy;
+  }
+  try { $("showArch").checked = localStorage.getItem("lgx-show-arch") === "1"; } catch (e) {}
+  $("showArch").addEventListener("change", () => {
+    try { localStorage.setItem("lgx-show-arch", $("showArch").checked ? "1" : "0"); } catch (e) {}
+    if ($("showArch").checked && !archLoaded) loadArchived(); else render();
+  });
+
   // ---------- notifications (only the viewer's own, like Trello's bell) ----------
   let notifs = [];
   let notifAll = false;
@@ -1825,6 +1879,10 @@
     const link = `https://trello.com/c/${esc(card.shortLink || card.id)}`;
     let full = null;
     try { full = await api("GET", `/cards/${card.id}`, { fields: "idBoard,idList,closed,name" }); } catch (e) {}
+    if (full && full.idBoard === BOARD_ID && full.closed) {
+      await loadArchived(true);
+      if (archived.some((c) => c.id === card.id)) return openCard(card.id);
+    }
     if (full && full.idBoard === BOARD_ID && !full.closed) {
       await reloadLists([full.idList]);
       if (cards.some((c) => c.id === card.id)) return openCard(card.id);
