@@ -247,6 +247,7 @@
   :root[data-theme="dark"] .toast { background: #ecebe6; color: #1d1d1b; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .toast { background: #ecebe6; color: #1d1d1b; } }
   .toast .tmsg { flex: 1; }
+  .toast .tmsg a { color: inherit; font-weight: 700; text-decoration: underline; margin-left: 4px; }
   .toast button { background: none; border: none; color: inherit; font-weight: 700; text-decoration: underline; padding: 4px 6px; }
   .toast button.tx { text-decoration: none; opacity: .7; }
 
@@ -1815,9 +1816,22 @@
     $("notifMenu").open = false;
     if (n.unread) markRead([n]);
     const card = n.data && n.data.card;
-    if (card && cards.some((c) => c.id === card.id)) openCard(card.id);
-    else if (card && card.shortLink) window.open("https://trello.com/c/" + card.shortLink, "_blank", "noopener");
+    if (card) openCardAnywhere(card);
   };
+  // Open a card from a notification inside the page. If it isn't loaded yet (new, or the board hasn't
+  // refreshed), read its list again; only cards from other boards or archived ones go to Trello.
+  async function openCardAnywhere(card) {
+    if (cards.some((c) => c.id === card.id)) return openCard(card.id);
+    const link = `https://trello.com/c/${esc(card.shortLink || card.id)}`;
+    let full = null;
+    try { full = await api("GET", `/cards/${card.id}`, { fields: "idBoard,idList,closed,name" }); } catch (e) {}
+    if (full && full.idBoard === BOARD_ID && !full.closed) {
+      await reloadLists([full.idList]);
+      if (cards.some((c) => c.id === card.id)) return openCard(card.id);
+    }
+    const why = !full ? "No se pudo abrir la tarjeta (puede que la hayan borrado)." : full.closed ? "Esa tarjeta está archivada." : "Esa tarjeta es de otro tablero.";
+    showToast(`${why} <a href="${link}" target="_blank" rel="noopener">Abrir en Trello</a>`);
+  }
   $("nReadAll").onclick = () => {
     const un = notifShown().filter((n) => n.unread);
     if (!un.length) return;
