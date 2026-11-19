@@ -429,7 +429,6 @@
 <div class="filters" id="filters">
   <input type="search" id="q" placeholder="Buscar… (tecla /)" title="Busca en el caso, el título y la descripción" aria-label="Buscar (atajo: /)">
   <div class="fdds" id="fdds"></div>
-  <label class="chk"><input type="checkbox" id="hideIdx" checked> Ocultar Pendientes / Resumen</label>
   <label class="chk" title="Suma las tarjetas archivadas del tablero, marcadas como Archivada"><input type="checkbox" id="showArch"> Ver archivadas</label>
   <button id="clearF" hidden></button>
 </div>
@@ -679,7 +678,6 @@
       try {
         const saved = JSON.parse(localStorage.getItem("lgx-filters") || "{}");
         if (typeof saved.q === "string") $("q").value = saved.q;
-        if (typeof saved.hideIdx === "boolean") $("hideIdx").checked = saved.hideIdx;
         FKEYS.forEach((k) => { const v = saved[k]; fsel[k] = new Set((Array.isArray(v) ? v : v ? [v] : []).filter((x) => typeof x === "string")); });
       } catch (e) {}
     }
@@ -700,14 +698,15 @@
   }
   function saveFilters() {
     try {
-      const o = { q: $("q").value, hideIdx: $("hideIdx").checked };
+      const o = { q: $("q").value };
       FKEYS.forEach((k) => (o[k] = [...fsel[k]]));
       localStorage.setItem("lgx-filters", JSON.stringify(o));
     } catch (e) {}
   }
   function filtered() {
     const q = $("q").value.trim().toLowerCase();
-    const S = fsel, hide = $("hideIdx").checked;
+    // "Pendientes / Resumen" index cards stay out of the views unless Tipo = Índice is picked.
+    const S = fsel, hide = hideIdx();
     return ($("showArch").checked ? cards.concat(archived) : cards).filter((c) =>
       (!hide || c.tipo !== "Índice") &&
       (!S.fTipo.size || S.fTipo.has(c.tipo) || c.extra.some((x) => S.fTipo.has(x))) &&
@@ -721,11 +720,9 @@
   // Reset every filter and apply the given ones ({ fTipo: "BUG" } or arrays). Goes to the table unless stay is set.
   function applyFilters(f, stay) {
     $("q").value = "";
-    $("hideIdx").checked = true;
     FKEYS.forEach((k) => fsel[k].clear());
     for (const k in f) {
-      if (k === "hideIdx") $("hideIdx").checked = f[k];
-      else if (k === "q") $("q").value = f[k];
+      if (k === "q") $("q").value = f[k];
       else if (fsel[k]) fsel[k] = new Set([].concat(f[k]));
     }
     renderFdds();
@@ -859,7 +856,7 @@
     ];
     $("main").innerHTML = `<div class="tboard">` + cols.map(([t, f, k]) => {
       const cs = rows.filter(f);
-      if (k === "idx" && $("hideIdx").checked) return "";
+      if (k === "idx" && hideIdx()) return "";
       return `<div class="tlist kc k-${k}"><h3><span>${esc(t)}</span><span class="n">${cs.length}</span></h3><div class="tcards" data-k="${k}">` +
         cs.map((c) => `<div class="tcard" tabindex="0" data-id="${esc(c.id)}"><div class="c">${esc(c.caseId)} · ${esc(c.listShort)}</div>
           <div class="n">${esc(c.title)}</div><div class="foot">${tagPrio(c)}${cardFoot(c)}</div></div>`).join("") +
@@ -902,7 +899,7 @@
       k("Dudas", n((c) => c.tipo === "Duda" || c.extra.includes("Duda")), { fTipo: "Duda" }) +
       k("Mejoras", n((c) => c.tipo === "Mejora"), { fTipo: "Mejora" }) +
       k("Tarjetas (sin índices)", open.length, {}) +
-      k("Pendientes / Resumen", cards.length - open.length, { fTipo: "Índice", hideIdx: false }) +
+      k("Pendientes / Resumen", cards.length - open.length, { fTipo: "Índice" }) +
       `</div><h3 class="sec">Últimos 7 días</h3><div class="kpis">` +
       kStatic("Tarjetas creadas", ws ? ws.created : "…", "Incluye las que después se archivaron.") +
       kStatic("Pasaron a FIXED", ws ? ws.fixed : "…", "Tarjetas a las que se les puso la etiqueta FIXED en los últimos 7 días.") +
@@ -1739,7 +1736,8 @@
     fsel[b.dataset.k].clear(); renderFdds(); saveFilters(); render();
   });
   $("fdds").addEventListener("toggle", (e) => { if (e.target.open) $("fdds").querySelectorAll("details[open]").forEach((o) => o !== e.target && (o.open = false)); }, true);
-  ["q", "hideIdx"].forEach((id) => $(id).addEventListener("input", () => { saveFilters(); render(); }));
+  function hideIdx() { return !fsel.fTipo.has("Índice"); }
+  ["q"].forEach((id) => $(id).addEventListener("input", () => { saveFilters(); render(); }));
   $("clearF").onclick = () => applyFilters({}, true);
 
   // Click outside closes any open dropdown / menu.
